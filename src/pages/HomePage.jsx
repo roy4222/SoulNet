@@ -1,14 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-
-// 定義文章分類
-const categories = [
-  { id: 'all', name: '全部' },
-  { id: 'life', name: '生活' },
-  { id: 'tech', name: '科技' },
-  { id: 'food', name: '美食' },
-  { id: 'travel', name: '旅遊' }
-];
+import { db } from '../utils/firebase';
+import { collection, getDocs } from 'firebase/firestore';
 
 // 模擬文章數據
 const dummyPosts = [
@@ -82,14 +75,46 @@ const dummyPosts = [
     likes: 165,
     comments: 39
   }
-
 ];
 
 // 定義HomePage組件
-const HomePage = () => {
-  // 狀態管理
-  const [selectedCategory, setSelectedCategory] = useState('all');
-  const [posts, setPosts] = useState(dummyPosts);
+function HomePage() {
+  // 定義狀態變數
+  const [selectedCategory, setSelectedCategory] = useState('all'); // 當前選中的分類
+  const [categories, setCategories] = useState([
+    { id: 'all', name: '全部' }
+  ]); // 分類列表，初始化為全部
+  const [isLoading, setIsLoading] = useState(true); // 加載狀態
+  const [posts, setPosts] = useState(dummyPosts); // 文章列表，初始化為假數據
+
+  // 使用 useEffect 鉤子在組件加載時獲取分類
+  useEffect(() => {
+    // 定義異步函數以獲取分類
+    const fetchCategories = async () => {
+      try {
+        // 從 Firestore 獲取 'topics' 集合的文檔
+        const querySnapshot = await getDocs(collection(db, 'topics'));
+        const fetchedCategories = [{ id: 'all', name: '全部' }]; // 初始化分類列表
+        
+        // 遍歷查詢結果，將每個分類添加到列表中
+        querySnapshot.forEach((doc) => {
+          fetchedCategories.push({
+            id: doc.id,
+            name: doc.data().name
+          });
+        });
+        
+        // 更新狀態
+        setCategories(fetchedCategories);
+        setIsLoading(false); // 設置加載完成
+      } catch (error) {
+        console.error('Error fetching categories:', error);
+        setIsLoading(false); // 即使出錯也設置加載完成
+      }
+    };
+
+    fetchCategories(); // 調用函數
+  }, []); // 空依賴數組意味著這個效果只在組件掛載時運行一次
 
   // 根據分類過濾文章
   const filteredPosts = selectedCategory === 'all' 
@@ -109,20 +134,33 @@ const HomePage = () => {
             className="bg-white rounded-lg shadow-md p-4 lg:h-fit order-2 lg:order-1"
           >
             <h2 className="text-lg font-semibold mb-4 px-2 lg:block hidden">文章分類</h2>
+            {/* 分類導航 - 在手機版時水平滾動，在桌面版時垂直排列 */}
             <nav className="flex lg:flex-col gap-2 overflow-x-auto lg:overflow-x-visible pb-2 lg:pb-0 -mx-4 lg:mx-0 px-4 lg:px-0">
-              {categories.map(category => (
-                <button
-                  key={category.id}
-                  onClick={() => setSelectedCategory(category.id)}
-                  className={`px-4 py-2 rounded-lg text-left transition-all whitespace-nowrap lg:whitespace-normal flex-shrink-0 lg:flex-shrink ${
-                    selectedCategory === category.id
-                      ? 'bg-blue-500 text-white'
-                      : 'hover:bg-gray-100 text-gray-600'
-                  }`}
-                >
-                  {category.name}
-                </button>
-              ))}
+              {isLoading ? (
+                // 加載中顯示旋轉動畫
+                <div className="flex justify-center">
+                  <svg className="animate-spin h-5 w-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S16.627 6 12 6z"></path>
+                  </svg>
+                </div>
+              ) : (
+                // 分類按鈕列表
+                categories.map(category => (
+                  <button
+                    key={category.id}
+                    onClick={() => setSelectedCategory(category.id)}
+                    className={`px-4 py-2 rounded-lg text-left transition-all whitespace-nowrap lg:whitespace-normal flex-shrink-0 lg:flex-shrink ${
+                      // 根據選中狀態設置不同的樣式
+                      selectedCategory === category.id
+                        ? 'bg-blue-500 text-white'
+                        : 'hover:bg-gray-100 text-gray-600'
+                    }`}
+                  >
+                    {category.name}
+                  </button>
+                ))
+              )}
             </nav>
           </motion.div>
 
