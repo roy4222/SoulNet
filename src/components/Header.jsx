@@ -111,7 +111,7 @@ export default function Header() {
                     <div className="flex items-center">
                         <Link to={ROUTES.HOME} className="flex items-center">
                             <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRu6w1L1n_jpEO94b80gNhWHTvkpCtCHvui2Q&s" alt="Logo" className="h-8 w-auto mr-4" />
-                            <span className="font-semibold text-xl text-gray-800">Social Platform</span>
+                            <span className="font-semibold text-xl text-gray-800">SoulNet</span>
                         </Link>
                     </div>
 

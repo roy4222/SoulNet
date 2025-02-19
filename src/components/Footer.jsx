@@ -13,7 +13,7 @@ function Footer() {
           <div className="text-center lg:text-left space-y-3">
             {/* 網站名稱，使用漸變文字效果，響應式字體大小 */}
             <h3 className="text-xl sm:text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-pink-300 to-indigo-300 mb-2">
-              Social Platform
+            SoulNet
             </h3>
             {/* 網站簡介，根據螢幕尺寸調整字體大小 */}
             <p className="text-sm sm:text-base text-indigo-200">

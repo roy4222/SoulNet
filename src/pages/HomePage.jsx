@@ -136,10 +136,10 @@ function HomePage() {
               className="text-center mb-4 sm:mb-8"
             >
               <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-800 mb-2 sm:mb-4">
-                歡迎來到社交平台
+                歡迎來到SoulNet
               </h1>
               <p className="text-base sm:text-lg lg:text-xl text-gray-600">
-                連結朋友，分享生活，探索世界
+                連結靈魂，共創精彩，分享生活的每一刻
               </p>
             </motion.div>
 
