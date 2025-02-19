@@ -98,23 +98,23 @@ const HomePage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        {/* 使用 grid 布局分為左側導航和右側內容 */}
-        <div className="grid grid-cols-[240px,1fr] gap-8">
-          {/* 左側分類導航 */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-8">
+        {/* 使用條件式 grid 布局 */}
+        <div className="grid grid-cols-1 lg:grid-cols-[240px,1fr] gap-4 lg:gap-8">
+          {/* 分類導航 - 在手機版時水平滾動 */}
           <motion.div
-            initial={{ x: -20, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
             transition={{ duration: 0.5 }}
-            className="bg-white rounded-lg shadow-md p-4 h-fit"
+            className="bg-white rounded-lg shadow-md p-4 lg:h-fit order-2 lg:order-1"
           >
-            <h2 className="text-lg font-semibold mb-4 px-2">文章分類</h2>
-            <nav className="flex flex-col gap-2">
+            <h2 className="text-lg font-semibold mb-4 px-2 lg:block hidden">文章分類</h2>
+            <nav className="flex lg:flex-col gap-2 overflow-x-auto lg:overflow-x-visible pb-2 lg:pb-0 -mx-4 lg:mx-0 px-4 lg:px-0">
               {categories.map(category => (
                 <button
                   key={category.id}
                   onClick={() => setSelectedCategory(category.id)}
-                  className={`px-4 py-2 rounded-lg text-left transition-all ${
+                  className={`px-4 py-2 rounded-lg text-left transition-all whitespace-nowrap lg:whitespace-normal flex-shrink-0 lg:flex-shrink ${
                     selectedCategory === category.id
                       ? 'bg-blue-500 text-white'
                       : 'hover:bg-gray-100 text-gray-600'
@@ -127,36 +127,36 @@ const HomePage = () => {
           </motion.div>
 
           {/* 右側內容區 */}
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6 order-1 lg:order-2">
             {/* 歡迎區塊 */}
             <motion.div
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.2 }}
-              className="text-center mb-8"
+              className="text-center mb-4 sm:mb-8"
             >
-              <h1 className="text-4xl font-bold text-gray-800 mb-4">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-800 mb-2 sm:mb-4">
                 歡迎來到社交平台
               </h1>
-              <p className="text-xl text-gray-600">
+              <p className="text-base sm:text-lg lg:text-xl text-gray-600">
                 連結朋友，分享生活，探索世界
               </p>
             </motion.div>
 
             {/* 文章列表區域 */}
-            <div className="grid gap-6">
+            <div className="grid gap-4 sm:gap-6">
               {filteredPosts.map(post => (
                 <motion.article
                   key={post.id}
                   initial={{ y: 20, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
                   transition={{ duration: 0.3 }}
-                  className="bg-white p-6 rounded-xl shadow-md"
+                  className="bg-white p-4 sm:p-6 rounded-xl shadow-md"
                 >
                   {/* 文章標題 */}
-                  <h2 className="text-xl font-semibold mb-2">{post.title}</h2>
+                  <h2 className="text-lg sm:text-xl font-semibold mb-2">{post.title}</h2>
                   {/* 文章分類和日期 */}
-                  <div className="flex items-center justify-between mb-4">
+                  <div className="flex flex-wrap sm:flex-nowrap items-center justify-between gap-2 mb-4">
                     {/* 分類標籤 */}
                     <span className="inline-block px-3 py-1 rounded-full text-sm bg-gray-100 text-gray-600">
                       {categories.find(c => c.id === post.category)?.name}
@@ -165,9 +165,9 @@ const HomePage = () => {
                     <span className="text-sm text-gray-500">{post.date}</span>
                   </div>
                   {/* 文章內容 */}
-                  <p className="text-gray-600 mb-4">{post.content}</p>
+                  <p className="text-gray-600 mb-4 text-sm sm:text-base leading-relaxed">{post.content}</p>
                   {/* 點讚和留言數量 */}
-                  <div className="flex items-center justify-between text-gray-500">
+                  <div className="flex items-center justify-between text-gray-500 text-sm sm:text-base">
                     {/* 點讚數量 */}
                     <div className="flex items-center">
                       <svg className="w-5 h-5 mr-1" fill="currentColor" viewBox="0 0 20 20">
