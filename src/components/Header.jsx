@@ -3,60 +3,93 @@ import { Link, useNavigate } from 'react-router-dom';
 import { ROUTES } from '../routes';
 import { useState, useEffect, useRef } from 'react';
 import { getAuth, onAuthStateChanged, signOut } from 'firebase/auth';
-import firebase from '../utils/firebase';
+import { auth } from '../utils/firebase';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // 預設頭像URL
 const DEFAULT_AVATAR = 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSCvBNjFR_6BVhW3lFNwF0oEk2N8JXjeiaSqg&s';
 
+// localStorage 的 key
+const USER_KEY = 'social:user';
+
 export default function Header() {
     // 定義狀態變量和鉤子
-    const [user, setUser] = useState(null);  // 用戶狀態
-    const [showNotification, setShowNotification] = useState(false);  // 通知顯示狀態
-    const [notificationMessage, setNotificationMessage] = useState('');  // 通知消息
-    const [showDropdown, setShowDropdown] = useState(false);  // 下拉菜單顯示狀態
-    const [isMenuOpen, setIsMenuOpen] = useState(false);  // 漢堡選單狀態
-    const navigate = useNavigate();  // 用於頁面導航
-    const auth = getAuth(firebase);  // 獲取 Firebase 認證實例
-    const dropdownRef = useRef(null);  // 下拉菜單的引用
-    const menuRef = useRef(null);  // 漢堡選單的引用
+    const [user, setUser] = useState(() => {
+        // 初始化時從 localStorage 讀取用戶資訊
+        const savedUser = localStorage.getItem(USER_KEY);
+        return savedUser ? JSON.parse(savedUser) : null;
+    });
+    const [showNotification, setShowNotification] = useState(false); // 控制通知顯示狀態
+    const [notificationMessage, setNotificationMessage] = useState(''); // 存儲通知消息
+    const [showDropdown, setShowDropdown] = useState(false); // 控制下拉菜單顯示狀態
+    const [isMenuOpen, setIsMenuOpen] = useState(false); // 控制漢堡菜單顯示狀態
+    const navigate = useNavigate(); // 用於頁面導航的鉤子
+    const dropdownRef = useRef(null); // 下拉菜單的引用，用於檢測外部點擊
+    const menuRef = useRef(null); // 漢堡菜單的引用，用於檢測外部點擊
+
+    // 顯示通知的函數
+    const displayNotification = (message) => {
+        setNotificationMessage(message); // 設置通知消息
+        setShowNotification(true); // 顯示通知
+        // 1秒後自動關閉通知
+        setTimeout(() => {
+            setShowNotification(false);
+        }, 1000);
+    };
 
     useEffect(() => {
         // 監聽用戶登入狀態
         const unsubscribe = onAuthStateChanged(auth, (user) => {
-            setUser(user);  // 更新用戶狀態
+            if (user) {
+                // 用戶登入時，將資訊存入 localStorage
+                const userData = {
+                    uid: user.uid,
+                    email: user.email,
+                    displayName: user.displayName,
+                    photoURL: user.photoURL || DEFAULT_AVATAR // 如果沒有頭像，使用默認頭像
+                };
+                localStorage.setItem(USER_KEY, JSON.stringify(userData));
+                setUser(userData); // 更新用戶狀態
+            } else {
+                // 用戶登出時，清除 localStorage
+                localStorage.removeItem(USER_KEY);
+                setUser(null); // 清除用戶狀態
+            }
         });
 
         // 點擊外部關閉下拉選單和漢堡選單
         const handleClickOutside = (event) => {
+            // 如果點擊的不是下拉菜單內部，則關閉下拉菜單
             if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-                setShowDropdown(false);  // 關閉下拉菜單
+                setShowDropdown(false);
             }
+            // 如果點擊的不是漢堡菜單內部，則關閉漢堡菜單
             if (menuRef.current && !menuRef.current.contains(event.target)) {
-                setIsMenuOpen(false);  // 關閉漢堡選單
+                setIsMenuOpen(false);
             }
         };
 
         // 添加點擊事件監聽器
         document.addEventListener('mousedown', handleClickOutside);
 
-        // 清理函數：取消訂閱和移除事件監聽器
+        // 清理函數
         return () => {
-            unsubscribe();
-            document.removeEventListener('mousedown', handleClickOutside);
+            unsubscribe(); // 取消 Firebase 身份驗證監聽器
+            document.removeEventListener('mousedown', handleClickOutside); // 移除點擊事件監聽器
         };
-    }, [auth]);
+    }, []); // 空依賴數組表示這個效果只在組件掛載和卸載時運行
 
     // 處理登出
     const handleSignOut = async () => {
         try {
-            await signOut(auth);  // 執行登出
-            setNotificationMessage('登出成功！');  // 設置成功消息
-            setShowNotification(true);  // 顯示通知
-            setTimeout(() => setShowNotification(false), 3000);  // 3秒後隱藏通知
-            navigate('/sign');  // 導航到登入頁
+            await signOut(auth); // 調用 Firebase 的登出方法
+            localStorage.removeItem(USER_KEY); // 清除本地存儲的用戶信息
+            setUser(null); // 清除用戶狀態
+            displayNotification('登出成功！'); // 顯示成功通知
+            navigate('/sign'); // 導向到登入頁面
         } catch (error) {
-            console.error('登出錯誤:', error);  // 記錄錯誤
+            console.error('登出錯誤:', error);
+            displayNotification('登出失敗，請稍後再試'); // 顯示錯誤通知
         }
     };
 
@@ -413,7 +446,7 @@ export default function Header() {
                         // 退場動畫：恢復到初始狀態
                         exit={{ opacity: 0, y: -50 }}
                         // 固定位置、顏色、內邊距、圓角和陰影樣式
-                        className="fixed top-20 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg"
+                        className="fixed top-4 right-4 bg-gray-500 text-white px-4 py-2 rounded shadow-lg"
                     >
                         {/* 顯示通知訊息 */}
                         {notificationMessage}
