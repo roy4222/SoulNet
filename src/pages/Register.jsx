@@ -41,18 +41,21 @@ const Register = () => {
       // 創建用戶
       const { user } = await createUserWithEmailAndPassword(auth, email, password);
       
-      // 更新用戶資料
+      // 生成隨機頭像URL
+      const avatarUrl = `https://api.dicebear.com/7.x/avataaars/svg?seed=${username}-${Date.now()}`;
+      
+      // 更新用戶的個人資料
       await updateProfile(user, {
-        displayName: username,
-        photoURL: `https://api.dicebear.com/7.x/initials/svg?seed=${username}` // 使用用戶名生成頭像
+        displayName: username, // 設置顯示名稱為用戶輸入的用戶名
+        photoURL: avatarUrl // 設置頭像URL為之前生成的隨機頭像
       });
 
-      // 顯示成功提示
+      // 設置成功狀態為true，觸發成功提示的顯示
       setShowSuccess(true);
-      // 3秒後導航到首頁
+      // 設置一個計時器，在註冊成功 1 秒後自動導航到首頁
       setTimeout(() => {
-        navigate('/');
-      }, 2000);
+        navigate('/'); // 使用 react-router-dom 的 navigate 函數導航到首頁
+      }, 1000); // 延遲 1000 毫秒（1秒）後執行
     } catch (error) {
       // 處理不同類型的錯誤
       switch (error.code) {

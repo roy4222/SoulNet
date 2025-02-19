@@ -21,14 +21,16 @@ const Sign = () => {
     setLoading(true);
 
     try {
+      // 獲取 Firebase 身份驗證實例
       const auth = getAuth(firebase);
+      // 使用電子郵件和密碼進行用戶登入
       await signInWithEmailAndPassword(auth, email, password);
-      // 顯示成功提示
+      // 設置成功狀態為真，觸發成功提示的顯示
       setShowSuccess(true);
-      // 3秒後導航到首頁
+      // 設置一個計時器，在登入成功 1 秒後自動導航到首頁
       setTimeout(() => {
         navigate('/');
-      }, 2000);
+      }, 1000);
     } catch (error) {
       // 處理不同類型的錯誤
       switch (error.code) {

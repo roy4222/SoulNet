@@ -122,55 +122,87 @@ export default function Header() {
                     {/* 右側用戶區域 - 只在大螢幕顯示 */}
                     <div className="hidden lg:flex items-center space-x-4">
                         {user ? (
-                            <div className="relative" ref={dropdownRef}>
-                                <button 
-                                    onClick={() => setShowDropdown(!showDropdown)}
-                                    className="focus:outline-none"
+                            // 如果用戶已登入，顯示發表文章按鈕和用戶頭像
+                            <>
+                                {/* 發表文章按鈕 */}
+                                <Link 
+                                    to="/create-post"
+                                    className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition duration-300 flex items-center space-x-2"
                                 >
-                                    <img 
-                                        src={user.photoURL || DEFAULT_AVATAR}
-                                        alt="用戶頭像" 
-                                        className="w-10 h-10 rounded-full border-2 border-blue-500 hover:border-blue-600 transition-colors duration-200"
-                                    />
-                                </button>
+                                    {/* 加號圖標 */}
+                                    <svg 
+                                        className="w-5 h-5" 
+                                        fill="none" 
+                                        stroke="currentColor" 
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <path 
+                                            strokeLinecap="round" 
+                                            strokeLinejoin="round" 
+                                            strokeWidth="2" 
+                                            d="M12 4v16m8-8H4"
+                                        />
+                                    </svg>
+                                    {/* 按鈕文字 */}
+                                    <span>發表文章</span>
+                                </Link>
+                                <div className="relative" ref={dropdownRef}>
+                                    {/* 用戶頭像按鈕，點擊時切換下拉選單的顯示狀態 */}
+                                    <button 
+                                        onClick={() => setShowDropdown(!showDropdown)}
+                                        className="focus:outline-none"
+                                    >
+                                        <img 
+                                            src={user.photoURL || DEFAULT_AVATAR}
+                                            alt="用戶頭像" 
+                                            className="w-10 h-10 rounded-full border-2 border-blue-500 hover:border-blue-600 transition-colors duration-200"
+                                        />
+                                    </button>
 
-                                <AnimatePresence>
-                                    {showDropdown && (
-                                        <motion.div
-                                            initial={{ opacity: 0, y: -10 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            exit={{ opacity: 0, y: -10 }}
-                                            className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl py-2 z-50"
-                                        >
-                                            <div className="px-4 py-2 border-b border-gray-100">
-                                                <p className="text-sm font-semibold text-gray-700">
-                                                    {user.displayName || '使用者'}
-                                                </p>
-                                                <p className="text-sm text-gray-500">
-                                                    {user.email}
-                                                </p>
-                                            </div>
-                                            <Link 
-                                                to="/profile" 
-                                                className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors duration-200"
-                                                onClick={() => setShowDropdown(false)}
+                                    {/* 使用 AnimatePresence 來處理下拉選單的動畫 */}
+                                    <AnimatePresence>
+                                        {showDropdown && (
+                                            // 下拉選單內容
+                                            <motion.div
+                                                initial={{ opacity: 0, y: -10 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                exit={{ opacity: 0, y: -10 }}
+                                                className="absolute right-0 mt-2 w-50 bg-white rounded-lg shadow-xl py-2 z-50"
                                             >
-                                                個人資料
-                                            </Link>
-                                            <button 
-                                                onClick={() => {
-                                                    handleSignOut();
-                                                    setShowDropdown(false);
-                                                }}
-                                                className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100 transition-colors duration-200"
-                                            >
-                                                登出
-                                            </button>
-                                        </motion.div>
-                                    )}
-                                </AnimatePresence>
-                            </div>
+                                                {/* 用戶資訊區塊 */}
+                                                <div className="px-4 py-2 border-b border-gray-100 ">
+                                                    <p className="text-sm font-semibold text-gray-700">
+                                                        {user.displayName || '使用者'}
+                                                    </p>
+                                                    <p className="text-sm text-gray-500">
+                                                        {user.email}
+                                                    </p>
+                                                </div>
+                                                {/* 個人資料連結 */}
+                                                <Link 
+                                                    to="/profile" 
+                                                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors duration-200"
+                                                    onClick={() => setShowDropdown(false)}
+                                                >
+                                                    個人資料
+                                                </Link>
+                                                {/* 登出按鈕 */}
+                                                <button 
+                                                    onClick={() => {
+                                                        handleSignOut();
+                                                        setShowDropdown(false);
+                                                    }}
+                                                    className="block w-full text-left text-red-600 hover:bg-gray-100 px-4 py-2 rounded-lg transition-colors duration-200"
+                                                >
+                                                    登出
+                                                </button>
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+                                </div>
+                            </>
                         ) : (
+                            // 如果用戶未登入，顯示登入和註冊按鈕
                             <div className="flex space-x-4">
                                 <Link 
                                     to="/sign" 
@@ -230,7 +262,7 @@ export default function Header() {
                             animate={{ x: 0 }}
                             exit={{ x: '100%' }}
                             transition={{ type: 'tween', duration: 0.3 }}
-                            className="fixed top-0 right-0 h-full w-64 bg-white shadow-xl lg:hidden z-50"
+                            className="fixed top-0 right-0 h-full w-68 bg-white shadow-xl lg:hidden z-50"
                         >
                             {/* 側邊欄內容 */}
                             <div className="flex flex-col h-full">
