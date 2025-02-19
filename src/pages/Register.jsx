@@ -180,20 +180,23 @@ const Register = () => {
             />
           </motion.div>
 
-          {/* 註冊按鈕和登入連結 */}
+          {/* 註冊按鈕和登入連結區域 */}
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.7 }}
             className="flex flex-col items-center space-y-4 pt-4"
           >
+            {/* 註冊按鈕：使用漸變背景，添加懸停和聚焦效果 */}
             <button 
               className="w-full px-8 py-3 text-lg font-semibold text-white bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl hover:from-blue-600 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transform hover:scale-105 transition duration-200"
               disabled={loading}
             >
               {loading ? '註冊中...' : '註冊'}
             </button>
+            {/* 錯誤訊息顯示區域 */}
             {error && <p className="text-red-600">{error}</p>}
+            {/* 登入頁面連結：使用 React Router 的 Link 組件 */}
             <Link 
               to="/sign" 
               className="text-blue-600 hover:text-blue-800 font-medium hover:underline transition duration-200"

@@ -269,22 +269,53 @@ export default function Header() {
                                 <div className="p-4">
                                     {/* 用戶資訊區域 */}
                                     {user ? (
-                                        <div className="mb-6">
-                                            <div className="flex items-center space-x-3 mb-4">
-                                                <img 
-                                                    src={user.photoURL || DEFAULT_AVATAR}
-                                                    alt="用戶頭像" 
-                                                    className="w-12 h-12 rounded-full border-2 border-blue-500"
-                                                />
-                                                <div>
-                                                    <p className="font-semibold text-gray-800">
-                                                        {user.displayName || '使用者'}
-                                                    </p>
-                                                    <p className="text-sm text-gray-500">
-                                                        {user.email}
-                                                    </p>
+                                        <div>
+                                            {/* 用戶頭像和個人信息 */}
+                                            <div className="mb-6">
+                                                <div className="flex items-center space-x-3 mb-4">
+                                                    {/* 用戶頭像 */}
+                                                    <img 
+                                                        src={user.photoURL || DEFAULT_AVATAR}
+                                                        alt="用戶頭像" 
+                                                        className="w-12 h-12 rounded-full border-2 border-blue-500"
+                                                    />
+                                                    {/* 用戶名稱和郵箱 */}
+                                                    <div>
+                                                        <p className="font-semibold text-gray-800">
+                                                            {user.displayName || '使用者'}
+                                                        </p>
+                                                        <p className="text-sm text-gray-500">
+                                                            {user.email}
+                                                        </p>
+                                                    </div>
                                                 </div>
                                             </div>
+                                            
+                                            {/* 發表文章按鈕 */}
+                                            <Link 
+                                                to="/create-post"
+                                                className="block w-full mb-6 bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition duration-300"
+                                                onClick={() => setIsMenuOpen(false)}
+                                            >
+                                                <div className="flex items-center justify-center space-x-2">
+                                                    {/* 加號圖標 */}
+                                                    <svg 
+                                                        className="w-5 h-5" 
+                                                        fill="none" 
+                                                        stroke="currentColor" 
+                                                        viewBox="0 0 24 24"
+                                                    >
+                                                        <path 
+                                                            strokeLinecap="round" 
+                                                            strokeLinejoin="round" 
+                                                            strokeWidth="2" 
+                                                            d="M12 4v16m8-8H4"
+                                                        />
+                                                    </svg>
+                                                    {/* 按鈕文字 */}
+                                                    <span>發表文章</span>
+                                                </div>
+                                            </Link>
                                         </div>
                                     ) : (
                                         <div className="mb-6 space-y-2">
