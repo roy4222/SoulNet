@@ -126,7 +126,7 @@ export default function Header() {
                             <>
                                 {/* 發表文章按鈕 */}
                                 <Link 
-                                    to="/create-post"
+                                    to="/Posts"
                                     className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition duration-300 flex items-center space-x-2"
                                 >
                                     {/* 加號圖標 */}
