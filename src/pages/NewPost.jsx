@@ -41,30 +41,39 @@ export default function NewPost() {
     // 儲存分類選項的狀態
     const [categories, setCategories] = useState([]);
 
-    // 從 Firestore 獲取分類選項
+    // 使用 useEffect 鉤子在組件加載時獲取分類選項
     useEffect(() => {
+        // 定義異步函數以獲取分類
         const fetchCategories = async () => {
+            // 獲取 Firestore 實例
             const db = getFirestore(firebase);
+            // 創建對 'topics' 集合的引用
             const topicsRef = collection(db, 'topics');
+            // 獲取 'topics' 集合的所有文檔
             const topicsSnapshot = await getDocs(topicsRef);
             
+            // 初始化一個空數組來存儲獲取的分類
             const fetchedCategories = [];
+            // 遍歷查詢結果
             topicsSnapshot.forEach((doc) => {
+                // 將每個文檔的 id 和名稱添加到數組中
                 fetchedCategories.push({
                     id: doc.id,
-                    name: doc.data().name || doc.id
+                    name: doc.data().name || doc.id // 如果沒有名稱，則使用 id
                 });
             });
 
+            // 更新分類狀態
             setCategories(fetchedCategories);
-            // 如果沒有預設分類,設為第一個分類
+            // 如果獲取到分類，將默認分類設置為第一個
             if (fetchedCategories.length > 0) {
                 setCategory(fetchedCategories[0].id);
             }
         };
 
+        // 調用獲取分類的函數
         fetchCategories();
-    }, []);
+    }, []); // 空依賴數組意味著這個效果只在組件掛載時運行一次
 
     // 處理圖片選擇
     const handleImageChange = (e) => {
