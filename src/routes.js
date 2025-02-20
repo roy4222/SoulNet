@@ -2,12 +2,15 @@
 import Sign from './pages/Sign';
 import Register from './pages/Register';
 import HomePage from './pages/HomePage';
+import NewPost from './pages/NewPost';
 
 // 定義路由路徑常量
 export const ROUTES = {
     HOME: '/',
     SIGN: '/sign',
-    REGISTER: '/register'
+    REGISTER: '/register',
+    NEW_POST: '/NewPost'
+    
 };
 
 // 定義路由配置
@@ -26,6 +29,11 @@ export const routes = [
         path: ROUTES.REGISTER,
         element: Register,
         title: '註冊'
+    },
+    {
+        path: ROUTES.NEW_POST,
+        element: NewPost,
+        title: '發表文章'
     }
 ];
 

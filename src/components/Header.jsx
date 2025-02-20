@@ -159,7 +159,7 @@ export default function Header() {
                             <>
                                 {/* 發表文章按鈕 */}
                                 <Link 
-                                    to="/Posts"
+                                    to={ROUTES.NEW_POST}
                                     className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition duration-300 flex items-center space-x-2"
                                 >
                                     {/* 加號圖標 */}
@@ -326,7 +326,7 @@ export default function Header() {
                                             
                                             {/* 發表文章按鈕 */}
                                             <Link 
-                                                to="/create-post"
+                                                to={ROUTES.NEW_POST}
                                                 className="block w-full mb-6 bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition duration-300"
                                                 onClick={() => setIsMenuOpen(false)}
                                             >
