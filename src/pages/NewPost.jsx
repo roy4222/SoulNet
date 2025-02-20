@@ -161,6 +161,7 @@ export default function NewPost() {
         }
     };
 
+    // 使用 Framer Motion 創建動畫效果的容器
     return (
         <motion.div 
             initial={{ opacity: 0 }}
@@ -168,25 +169,32 @@ export default function NewPost() {
             exit={{ opacity: 0 }}
             className="max-w-2xl mx-auto p-4"
         >
+            {/* 頁面標題 */}
             <h1 className="text-3xl font-bold mb-6">發表新文章</h1>
             
+            {/* 表單開始 */}
             <form onSubmit={handleSubmit} className="space-y-4">
-                 {/* 圖片上傳 */}
+                 {/* 圖片上傳區域 */}
                  <div className="mb-6">
                     <label htmlFor="image" className="block text-lg font-semibold text-gray-800 mb-2">
-                        上傳圖片
+                        上傳圖片(可選)
                     </label>
                     <div className="flex items-center justify-center w-full">
+                      {/* 圖片上傳標籤，根據是否有預覽圖改變樣式 */}
                       <label htmlFor="image" className={`flex flex-col items-center justify-center w-full h-64 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer ${imagePreview ? 'bg-cover bg-center' : 'bg-gray-50 hover:bg-gray-100'}`} style={imagePreview ? { backgroundImage: `url(${imagePreview})` } : {}}>
+                        {/* 當沒有預覽圖時顯示上傳提示 */}
                         {!imagePreview && (
                           <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                            {/* 上傳圖標 */}
                             <svg className="w-10 h-10 mb-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
                             </svg>
+                            {/* 上傳提示文字 */}
                             <p className="mb-2 text-sm text-gray-500"><span className="font-semibold">點擊上傳</span> 或拖放</p>
                             <p className="text-xs text-gray-500">PNG, JPG, GIF (最大 5MB)</p>
                           </div>
                         )}
+                        {/* 隱藏的文件輸入框 */}
                         <input
                           id="image"
                           type="file"
@@ -198,7 +206,9 @@ export default function NewPost() {
                       </label>
                     </div>
                 </div>
+                {/* 標題、內容和分類輸入區域 */}
                 <div className="space-y-6">
+                    {/* 標題輸入 */}
                     <div>
                         <label htmlFor="title" className="block text-lg font-semibold text-gray-800 mb-2">標題</label>
                         <input
@@ -211,6 +221,7 @@ export default function NewPost() {
                         />
                     </div>
 
+                    {/* 內容輸入 */}
                     <div>
                         <label htmlFor="content" className="block text-lg font-semibold text-gray-800 mb-2">內容</label>
                         <textarea
@@ -223,6 +234,7 @@ export default function NewPost() {
                         />
                     </div>
 
+                    {/* 分類選擇 */}
                     <div>
                         <label htmlFor="category" className="block text-lg font-semibold text-gray-800 mb-2">分類</label>
                         <select
@@ -240,10 +252,12 @@ export default function NewPost() {
                     </div>
                 </div>
 
+                {/* 錯誤訊息顯示 */}
                 {error && (
                     <div className="text-red-600 text-sm">{error}</div>
                 )}
 
+                {/* 提交按鈕 */}
                 <div className="flex justify-end mt-6">
                     <button
                         type="submit"
@@ -252,6 +266,7 @@ export default function NewPost() {
                     >
                         {loading ? (
                             <span className="flex items-center">
+                                {/* 載入中的動畫圖標 */}
                                 <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>

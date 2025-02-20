@@ -229,11 +229,7 @@ function HomePage() {
                           }}
                         />
                       </div>
-                    ) : (
-                      <div className="w-full h-48 bg-gradient-to-r from-gray-100 to-gray-200 flex items-center justify-center rounded-lg shadow-inner">
-                        <span className="text-gray-400 text-sm font-medium">暫無圖片</span>
-                      </div>
-                    )}
+                    ) : null}
 
                     {/* 文章分類 */}
                     <div className="mb-4">
