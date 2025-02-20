@@ -23,12 +23,15 @@ function HomePage() {
         const querySnapshot = await getDocs(collection(db, 'topics'));
         const fetchedCategories = [{ id: 'all', name: '全部' }]; // 初始化分類列表
         
-        // 遍歷查詢結果，將每個分類添加到列表中
+        // 遍歷查詢結果，過濾掉 'other' 分類
         querySnapshot.forEach((doc) => {
-          fetchedCategories.push({
-            id: doc.id,
-            name: doc.data().name
-          });
+          // 如果不是 'other' 分類，則添加到列表中
+          if (doc.id !== 'other') {
+            fetchedCategories.push({
+              id: doc.id,
+              name: doc.data().name
+            });
+          }
         });
         
         // 更新狀態
