@@ -50,41 +50,70 @@ function HomePage() {
   useEffect(() => {
     // 定義異步函數 fetchPosts 用於獲取文章數據
     const fetchPosts = async () => {
+      setIsLoadingPosts(true);
       try {
-        // 設置加載狀態為 true
-        setIsLoadingPosts(true);
-        // 從 Firestore 獲取 'posts' 集合的所有文檔
         const querySnapshot = await getDocs(collection(db, 'posts'));
         const fetchedPosts = [];
         
-        // 遍歷查詢結果，將每篇文章的數據添加到 fetchedPosts 數組中
         querySnapshot.forEach((doc) => {
           const postData = doc.data();
+          // 修正舊的圖片URL格式
+          let imageUrl = postData.imageUrl;
+          console.log('原始imageUrl:', imageUrl);
+          
+          if (imageUrl) {
+            // 從URL中提取文件名
+            let fileName;
+            if (imageUrl.includes('cloudflarestorage.com')) {
+              const urlParts = imageUrl.split('/');
+              fileName = urlParts[urlParts.length - 1];
+              // 如果文件名前面是soulnet,需要去掉
+              if (fileName === 'soulnet') {
+                fileName = urlParts[urlParts.length - 1];
+              }
+              const endpoint = import.meta.env.VITE_R2_ENDPOINT;
+              imageUrl = `https://${endpoint}/${fileName}`;
+              console.log('修正後imageUrl:', imageUrl);
+            }
+          }
+          
+          // 確保作者資訊被正確保存
+          const author = postData.author || {
+            displayName: '匿名用戶',
+            photoURL: null,
+            uid: null,
+            email: null
+          };
+          
           fetchedPosts.push({
-            id: doc.id, // 添加文檔 ID 作為文章 ID
-            ...postData // 展開文章的其他數據
+            id: doc.id,
+            ...postData,
+            imageUrl,
+            author  // 確保作者資訊被正確保存
           });
         });
         
-        // 更新 posts 狀態，將獲取的文章數據設置到狀態中
+        // 按創建時間降序排序
+        fetchedPosts.sort((a, b) => b.createdAt - a.createdAt);
+        console.log('所有文章:', fetchedPosts);
+        
         setPosts(fetchedPosts);
       } catch (error) {
-        // 如果發生錯誤，在控制台輸出錯誤信息
         console.error('Error fetching posts:', error);
       } finally {
-        // 無論成功與否，最後都將加載狀態設置為 false
         setIsLoadingPosts(false);
       }
     };
 
-    // 調用 fetchPosts 函數
     fetchPosts();
   }, []); // 空依賴數組意味著這個效果只在組件掛載時運行一次
 
-  // 根據分類過濾文章
-  const filteredPosts = selectedCategory === 'all' 
-    ? posts 
-    : posts.filter(post => post.category === selectedCategory);
+  // 根據選中的分類過濾文章
+  const filteredPosts = posts.filter(post => {
+    if (selectedCategory === 'all') return true;
+    // 同時支援新舊格式的分類字段
+    return post.category === selectedCategory || post.topic === selectedCategory;
+  });
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -105,7 +134,7 @@ function HomePage() {
                 // 加載中顯示旋轉動畫
                 <div className="flex justify-center">
                   <svg className="animate-spin h-5 w-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S16.627 6 12 6z"></path>
                   </svg>
                 </div>
@@ -151,7 +180,7 @@ function HomePage() {
               {isLoadingPosts ? (
                 <div className="flex justify-center">
                   <svg className="animate-spin h-5 w-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S16.627 6 12 6z"></path>
                   </svg>
                 </div>
@@ -164,35 +193,72 @@ function HomePage() {
                     transition={{ duration: 0.3 }}
                     className="bg-white p-4 sm:p-6 rounded-xl shadow-md"
                   >
+                    {/* 文章標題和作者資訊 */}
+                    <div className="flex items-center gap-3 mb-4">
+                      <img 
+                        src={post.author?.photoURL || 'https://api.dicebear.com/7.x/avataaars/svg?seed=default'} 
+                        alt={post.author?.displayName || '匿名用戶'} 
+                        className="w-10 h-10 rounded-full object-cover"
+                      />
+                      <div>
+                        <h3 className="font-medium">{post.author?.email || post.author?.displayName || '匿名用戶'}</h3>
+                        <p className="text-sm text-gray-500">
+                          {post.createdAt?.toDate().toLocaleDateString('zh-TW', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
+                          })}
+                        </p>
+                      </div>
+                    </div>
+
                     {/* 文章標題 */}
                     <h2 className="text-lg sm:text-xl font-semibold mb-2">{post.title}</h2>
-                    {/* 文章分類和日期 */}
-                    <div className="flex flex-wrap sm:flex-nowrap items-center justify-between gap-2 mb-4">
-                      {/* 分類標籤 */}
+
+                    {/* 文章圖片 */}
+                    {post.imageUrl ? (
+                      <div className="mb-4 rounded-lg overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300">
+                        <img 
+                          src={post.imageUrl} 
+                          alt={post.title}
+                          className="w-full h-auto max-h-96 object-cover transform hover:scale-105 transition-transform duration-300"
+                          onError={(e) => {
+                            console.error('圖片載入失敗:', post.imageUrl);
+                            e.target.src = '/placeholder.png';
+                            e.target.onerror = null;
+                          }}
+                        />
+                      </div>
+                    ) : (
+                      <div className="w-full h-48 bg-gradient-to-r from-gray-100 to-gray-200 flex items-center justify-center rounded-lg shadow-inner">
+                        <span className="text-gray-400 text-sm font-medium">暫無圖片</span>
+                      </div>
+                    )}
+
+                    {/* 文章分類 */}
+                    <div className="mb-4">
                       <span className="inline-block px-3 py-1 rounded-full text-sm bg-gray-100 text-gray-600">
-                        {categories.find(c => c.id === post.category)?.name}
+                        {categories.find(c => c.id === (post.topic || post.category))?.name || '未分類'}
                       </span>
-                      {/* 發布日期 */}
-                      <span className="text-sm text-gray-500">{post.date}</span>
                     </div>
+
                     {/* 文章內容 */}
                     <p className="text-gray-600 mb-4 text-sm sm:text-base leading-relaxed">{post.content}</p>
-                    {/* 點讚和留言數量 */}
-                    <div className="flex items-center justify-between text-gray-500 text-sm sm:text-base">
-                      {/* 點讚數量 */}
-                      <div className="flex items-center">
-                        <svg className="w-5 h-5 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                          <path d="M2 10.5a1.5 1.5 0 113 0v6a1.5 1.5 0 01-3 0v-6zM6 10.333v5.43a2 2 0 001.106 1.79l.05.025A4 4 0 008.943 18h5.416a2 2 0 001.962-1.608l1.2-6A2 2 0 0015.56 8H12V4a2 2 0 00-2-2 1 1 0 00-1 1v.667a4 4 0 01-.8 2.4L6.8 7.933a4 4 0 00-.8 2.4z" />
+
+                    {/* 互動按鈕 */}
+                    <div className="flex items-center gap-4 text-gray-500">
+                      <button className="flex items-center gap-1 hover:text-blue-500 transition-colors">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                         </svg>
-                        <span>{post.likes} 個讚</span>
-                      </div>
-                      {/* 留言數量 */}
-                      <div className="flex items-center">
-                        <svg className="w-5 h-5 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clipRule="evenodd" />
+                        <span>讚</span>
+                      </button>
+                      <button className="flex items-center gap-1 hover:text-blue-500 transition-colors">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                         </svg>
-                        <span>{post.comments} 則留言</span>
-                      </div>
+                        <span>留言</span>
+                      </button>
                     </div>
                   </motion.article>
                 ))

@@ -3,8 +3,7 @@
 import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 import { getAuth, setPersistence, browserLocalPersistence } from "firebase/auth";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
+import { S3Client } from "@aws-sdk/client-s3";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -24,5 +23,16 @@ const auth = getAuth(app);
 // 設置身份驗證持久性為 LOCAL，這樣登入狀態會保存在 localStorage 中
 setPersistence(auth, browserLocalPersistence);
 
-export { db, auth };
+// 初始化 Cloudflare R2 客戶端
+const r2Client = new S3Client({
+  region: "auto",
+  endpoint: `https://${import.meta.env.VITE_R2_API_ENDPOINT}`,
+  credentials: {
+    accessKeyId: import.meta.env.VITE_R2_ACCESS_KEY_ID,
+    secretAccessKey: import.meta.env.VITE_R2_SECRET_ACCESS_KEY,
+  },
+  forcePathStyle: true // 需要這個來支援R2的路徑風格
+});
+
+export { db, auth, r2Client };
 export default app;

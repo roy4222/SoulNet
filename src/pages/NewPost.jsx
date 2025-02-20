@@ -4,7 +4,22 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { getFirestore, collection, addDoc, getDocs, doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
-import firebase from '../utils/firebase';
+import { PutObjectCommand } from "@aws-sdk/client-s3";
+import { v4 as uuidv4 } from 'uuid';
+import firebase, { r2Client } from '../utils/firebase';
+
+// 獲取文件的ContentType
+const getContentType = (file) => {
+    const extension = file.name.split('.').pop().toLowerCase();
+    const types = {
+        'png': 'image/png',
+        'jpg': 'image/jpeg',
+        'jpeg': 'image/jpeg',
+        'gif': 'image/gif',
+        'webp': 'image/webp'
+    };
+    return types[extension] || file.type;
+};
 
 // 定義 NewPost 組件
 export default function NewPost() {
@@ -14,6 +29,8 @@ export default function NewPost() {
     const [category, setCategory] = useState('life');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+    const [image, setImage] = useState(null);
+    const [imagePreview, setImagePreview] = useState('');
     
     // 使用 useNavigate 鉤子來進行路由導航
     const navigate = useNavigate();
@@ -23,11 +40,6 @@ export default function NewPost() {
 
     // 儲存分類選項的狀態
     const [categories, setCategories] = useState([]);
-    // 新增主題對話框的狀態
-    const [showTopicDialog, setShowTopicDialog] = useState(false);
-    const [newTopicId, setNewTopicId] = useState('');
-    const [newTopicName, setNewTopicName] = useState('');
-    const [topicError, setTopicError] = useState('');
 
     // 從 Firestore 獲取分類選項
     useEffect(() => {
@@ -39,47 +51,67 @@ export default function NewPost() {
             const fetchedCategories = [];
             topicsSnapshot.forEach((doc) => {
                 fetchedCategories.push({
-                    value: doc.id,
-                    label: doc.data().name || doc.id
+                    id: doc.id,
+                    name: doc.data().name || doc.id
                 });
             });
 
-            // 如果沒有 'other' 分類，則新增一個（使用固定的文檔ID）
-            const otherDocRef = doc(db, 'topics', 'other');
-            const otherDoc = await getDoc(otherDocRef);
-            
-            if (!otherDoc.exists()) {
-                await setDoc(otherDocRef, {
-                    name: '其他',
-                    createdAt: serverTimestamp()
-                });
-                fetchedCategories.push({ value: 'other', label: '其他' });
-            } else if (!fetchedCategories.some(cat => cat.value === 'other')) {
-                fetchedCategories.push({ value: 'other', label: '其他' });
-            }
-
             setCategories(fetchedCategories);
+            // 如果沒有預設分類,設為第一個分類
+            if (fetchedCategories.length > 0) {
+                setCategory(fetchedCategories[0].id);
+            }
         };
 
-        fetchCategories().catch(console.error);
+        fetchCategories();
     }, []);
 
-    // 使用 useEffect 鉤子來檢查用戶登入狀態
-    const [authChecked, setAuthChecked] = useState(false);
-
-    useEffect(() => {
-        // 監聽身份驗證狀態變化
-        const unsubscribe = onAuthStateChanged(auth, (user) => {
-            setAuthChecked(true);
-            if (!user) {
-                // 如果用戶未登入，則導航到登入頁面
-                navigate('/sign');
+    // 處理圖片選擇
+    const handleImageChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            if (file.size > 5 * 1024 * 1024) { // 5MB限制
+                setError('圖片大小不能超過5MB');
+                return;
             }
-        });
+            setImage(file);
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setImagePreview(reader.result);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
 
-        // 清理訂閱
-        return () => unsubscribe();
-    }, [navigate]);
+    // 上傳圖片到R2
+    const uploadImageToR2 = async (file) => {
+        const fileExtension = file.name.split('.').pop();
+        const fileName = `${uuidv4()}.${fileExtension}`;
+        
+        try {
+            // 將File轉換為ArrayBuffer
+            const buffer = await file.arrayBuffer();
+
+            const command = new PutObjectCommand({
+                Bucket: import.meta.env.VITE_R2_BUCKET,
+                Key: fileName,
+                Body: buffer,
+                ContentType: getContentType(file),
+                CacheControl: 'public, max-age=31536000',
+            });
+
+            await r2Client.send(command);
+            
+            // 使用Cloudflare R2的公開訪問URL
+            const endpoint = import.meta.env.VITE_R2_ENDPOINT;
+            const publicUrl = `https://${endpoint}/${fileName}`;
+            console.log('生成的publicUrl:', publicUrl);
+            return publicUrl;
+        } catch (error) {
+            console.error('上傳圖片失敗:', error);
+            throw error;
+        }
+    };
 
     // 處理表單提交的函數
     const handleSubmit = async (e) => {
@@ -94,234 +126,142 @@ export default function NewPost() {
         setError('');
 
         try {
+            let imageUrl = '';
+            if (image) {
+                imageUrl = await uploadImageToR2(image);
+            }
+
             // 獲取 Firestore 實例
             const db = getFirestore(firebase);
             const postsRef = collection(db, 'posts');
             
             // 創建新文章文檔
-            await addDoc(postsRef, {
+            const postData = {
+                imageUrl: imageUrl || '',
                 title: title.trim(),
                 content: content.trim(),
-                category: category,
-                author: auth.currentUser.displayName || auth.currentUser.email,
-                authorId: auth.currentUser.uid,
-                date: new Date().toISOString().split('T')[0],
-                likes: 0,
-                comments: [],
-                createdAt: serverTimestamp()
-            });
+                category: category, // 使用category而不是topic
+                createdAt: serverTimestamp(),
+                author: {
+                    displayName: auth.currentUser.displayName || '匿名用戶',
+                    photoURL: auth.currentUser.photoURL || null,
+                    uid: auth.currentUser.uid,
+                    email: auth.currentUser.email
+                }
+            };
+
+            await addDoc(postsRef, postData);
 
             // 發布成功後導航到首頁
             navigate('/');
-        } catch (err) {
-            setError('發布文章時出現錯誤，請稍後再試');
-            console.error('Error creating post:', err);
-        } finally {
+        } catch (error) {
+            console.error('發文失敗:', error);
+            setError('發文失敗，請稍後再試');
             setLoading(false);
         }
     };
 
-    // 渲染組件
     return (
-        <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            className="max-w-2xl mx-auto p-4 mt-8"
+        <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="max-w-2xl mx-auto p-4"
         >
-            <h1 className="text-3xl font-bold mb-6 text-gray-800">發表新文章</h1>
+            <h1 className="text-3xl font-bold mb-6">發表新文章</h1>
             
             <form onSubmit={handleSubmit} className="space-y-4">
-                {/* 顯示錯誤信息 */}
-                {error && (
-                    <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-                        {error}
-                    </div>
-                )}
-                
-                <div className="space-y-4">
-                    {/* 標題輸入框 */}
-                    <div>
-                        <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">
-                            標題
-                        </label>
+                 {/* 圖片上傳 */}
+                 <div className="mb-6">
+                    <label htmlFor="image" className="block text-lg font-semibold text-gray-800 mb-2">
+                        上傳圖片
+                    </label>
+                    <div className="flex items-center justify-center w-full">
+                      <label htmlFor="image" className={`flex flex-col items-center justify-center w-full h-64 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer ${imagePreview ? 'bg-cover bg-center' : 'bg-gray-50 hover:bg-gray-100'}`} style={imagePreview ? { backgroundImage: `url(${imagePreview})` } : {}}>
+                        {!imagePreview && (
+                          <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                            <svg className="w-10 h-10 mb-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                            </svg>
+                            <p className="mb-2 text-sm text-gray-500"><span className="font-semibold">點擊上傳</span> 或拖放</p>
+                            <p className="text-xs text-gray-500">PNG, JPG, GIF (最大 5MB)</p>
+                          </div>
+                        )}
                         <input
-                            type="text"
+                          id="image"
+                          type="file"
+                          accept="image/*"
+                          onChange={handleImageChange}
+                          className="hidden"
+                          disabled={loading}
+                        />
+                      </label>
+                    </div>
+                </div>
+                <div className="space-y-6">
+                    <div>
+                        <label htmlFor="title" className="block text-lg font-semibold text-gray-800 mb-2">標題</label>
+                        <input
                             id="title"
+                            type="text"
                             value={title}
                             onChange={(e) => setTitle(e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            placeholder="請輸入文章標題"
-                            disabled={loading}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition duration-200"
+                            placeholder="請輸入吸引人的標題"
                         />
                     </div>
 
-                    {/* 分類選擇框 */}
                     <div>
-                        <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-1">
-                            分類
-                        </label>
+                        <label htmlFor="content" className="block text-lg font-semibold text-gray-800 mb-2">內容</label>
+                        <textarea
+                            id="content"
+                            value={content}
+                            onChange={(e) => setContent(e.target.value)}
+                            rows="8"
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition duration-200 resize-none"
+                            placeholder="分享你的想法..."
+                        />
+                    </div>
+
+                    <div>
+                        <label htmlFor="category" className="block text-lg font-semibold text-gray-800 mb-2">分類</label>
                         <select
                             id="category"
                             value={category}
-                            onChange={(e) => {
-                                const value = e.target.value;
-                                setCategory(value);
-                                if (value === 'other') {
-                                    setShowTopicDialog(true);
-                                }
-                            }}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            disabled={loading}
+                            onChange={(e) => setCategory(e.target.value)}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition duration-200 bg-white"
                         >
                             {categories.map((cat) => (
-                                <option key={cat.value} value={cat.value}>
-                                    {cat.label}
+                                <option key={cat.id} value={cat.id}>
+                                    {cat.name}
                                 </option>
                             ))}
                         </select>
                     </div>
                 </div>
 
-                {/* 內容輸入框 */}
-                <div>
-                    <label htmlFor="content" className="block text-sm font-medium text-gray-700 mb-1">
-                        內容
-                    </label>
-                    <textarea
-                        id="content"
-                        value={content}
-                        onChange={(e) => setContent(e.target.value)}
-                        rows="10"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="請輸入文章內容"
-                        disabled={loading}
-                    />
-                </div>
+                {error && (
+                    <div className="text-red-600 text-sm">{error}</div>
+                )}
 
-                {/* 按鈕組 */}
-                <div className="flex justify-end space-x-4">
-                    <button
-                        type="button"
-                        onClick={() => navigate('/')}
-                        className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
-                        disabled={loading}
-                    >
-                        取消
-                    </button>
+                <div className="flex justify-end mt-6">
                     <button
                         type="submit"
-                        className="px-4 py-2 text-white bg-blue-500 rounded-md hover:bg-blue-600 transition-colors disabled:bg-blue-300"
                         disabled={loading}
+                        className={`px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-lg font-semibold rounded-lg shadow-md hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transform hover:scale-105 transition duration-300 ease-in-out ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
-                        {loading ? '發布中...' : '發布文章'}
+                        {loading ? (
+                            <span className="flex items-center">
+                                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                發布中...
+                            </span>
+                        ) : '發布文章'}
                     </button>
                 </div>
             </form>
-
-            {/* 新增主題對話框 */}
-            {showTopicDialog && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
-                    <div className="bg-white rounded-lg p-6 w-full max-w-md">
-                        <h2 className="text-xl font-bold mb-4">新增主題</h2>
-                        
-                        {topicError && (
-                            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-                                {topicError}
-                            </div>
-                        )}
-
-                        <div className="space-y-4">
-                            <div>
-                                <label htmlFor="topicId" className="block text-sm font-medium text-gray-700 mb-1">
-                                    主題 ID
-                                </label>
-                                <input
-                                    type="text"
-                                    id="topicId"
-                                    value={newTopicId}
-                                    onChange={(e) => setNewTopicId(e.target.value.toLowerCase())}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    placeholder="請輸入主題 ID（小寫英文）"
-                                />
-                            </div>
-
-                            <div>
-                                <label htmlFor="topicName" className="block text-sm font-medium text-gray-700 mb-1">
-                                    主題名稱
-                                </label>
-                                <input
-                                    type="text"
-                                    id="topicName"
-                                    value={newTopicName}
-                                    onChange={(e) => setNewTopicName(e.target.value)}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    placeholder="請輸入主題名稱"
-                                />
-                            </div>
-
-                            <div className="flex justify-end space-x-4 mt-6">
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setShowTopicDialog(false);
-                                        setCategory('life');
-                                        setNewTopicId('');
-                                        setNewTopicName('');
-                                        setTopicError('');
-                                    }}
-                                    className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
-                                >
-                                    取消
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={async () => {
-                                        if (!newTopicId.trim() || !newTopicName.trim()) {
-                                            setTopicError('請填寫所有欄位');
-                                            return;
-                                        }
-
-                                        if (!/^[a-z0-9-]+$/.test(newTopicId)) {
-                                            setTopicError('ID 只能包含小寫英文、數字和線條');
-                                            return;
-                                        }
-
-                                        try {
-                                            const db = getFirestore(firebase);
-                                            const newTopicRef = doc(db, 'topics', newTopicId);
-                                            const topicDoc = await getDoc(newTopicRef);
-
-                                            if (topicDoc.exists()) {
-                                                setTopicError('此 ID 已存在');
-                                                return;
-                                            }
-
-                                            await setDoc(newTopicRef, {
-                                                name: newTopicName,
-                                                createdAt: serverTimestamp()
-                                            });
-
-                                            setCategories(prev => [...prev, { value: newTopicId, label: newTopicName }]);
-                                            setCategory(newTopicId);
-                                            setShowTopicDialog(false);
-                                            setNewTopicId('');
-                                            setNewTopicName('');
-                                            setTopicError('');
-                                        } catch (err) {
-                                            console.error('Error creating topic:', err);
-                                            setTopicError('創建主題時發生錯誤');
-                                        }
-                                    }}
-                                    className="px-4 py-2 text-white bg-blue-500 rounded-md hover:bg-blue-600 transition-colors"
-                                >
-                                    確認
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
         </motion.div>
     );
 }
