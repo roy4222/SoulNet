@@ -91,9 +91,9 @@ export default function NewPost() {
     // 處理表單提交的函數
     const handleSubmit = async (e) => {
         e.preventDefault();
-        // 驗證表單輸入
-        if (!title.trim() || !content.trim() || !category) {
-            setError('標題、內容和分類不能為空');
+        // 只驗證分類
+        if (!category) {
+            setError('請選擇一個分類');
             return;
         }
 
@@ -109,11 +109,11 @@ export default function NewPost() {
             // 獲取 Firestore 實例
             const postsRef = collection(db, 'posts');
             
-            // 創建新文章文檔
+            // 創建新文章文檔，標題和內容可為空
             const postData = {
                 imageUrl: imageUrl || '',
-                title: title.trim(),
-                content: content.replace(/\n/g, '\n'),
+                title: title.trim() || '',
+                content: content.replace(/\n/g, '\n') || '',
                 category: category, 
                 createdAt: serverTimestamp(),
                 author: {
@@ -217,23 +217,22 @@ export default function NewPost() {
                 {/* 標題輸入框 */}
                 <div>
                     <label htmlFor="title" className="block text-lg font-semibold text-gray-800 dark:text-gray-200 mb-2">
-                        標題
+                        標題 (可選)
                     </label>
                     <input
                         type="text"
                         id="title"
                         value={title}
                         onChange={(e) => setTitle(e.target.value)}
-                        placeholder="輸入文章標題..."
+                        placeholder="想說些什麼嗎？（可選）"
                         className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-                        required
                     />
                 </div>
 
                 {/* 分類選擇 */}
                 <div>
                     <label htmlFor="category" className="block text-lg font-semibold text-gray-800 dark:text-gray-200 mb-2">
-                        分類
+                        分類 <span className="text-red-500">*</span>
                     </label>
                     <select
                         id="category"
@@ -258,16 +257,15 @@ export default function NewPost() {
                 {/* 內容輸入框 */}
                 <div>
                     <label htmlFor="content" className="block text-lg font-semibold text-gray-800 dark:text-gray-200 mb-2">
-                        內容
+                        內容 (可選)
                     </label>
                     <textarea
                         id="content"
                         value={content}
                         onChange={(e) => setContent(e.target.value)}
-                        placeholder="輸入文章內容..."
+                        placeholder="分享你的想法...（可選）"
                         rows="6"
                         className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-                        required
                     />
                 </div>
 
