@@ -129,16 +129,20 @@ function HomePage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-8">
         {/* 使用條件式 grid 布局 */}
         <div className="grid grid-cols-1 lg:grid-cols-[240px,1fr] gap-4 lg:gap-8">
-          {/* 分類導航 - 在手機版時水平滾動 */}
+          {/* 分類導航 - 在手機版時水平滾動，在桌面版時固定在左側 */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.5 }}
-            className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 lg:h-fit order-2 lg:order-1"
+            className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 order-2 lg:order-1 lg:sticky lg:top-[8rem] lg:w-[240px] lg:max-h-[calc(80vh-5rem)] lg:overflow-y-auto"
+            style={{
+              scrollbarWidth: 'thin',
+              scrollbarColor: 'rgba(156, 163, 175, 0.3) transparent'
+            }}
           >
-            <h2 className="text-lg font-semibold mb-4 px-2 lg:block hidden text-gray-900 dark:text-white">文章分類</h2>
+            <h2 className="text-lg font-semibold mb-4 px-2 lg:block hidden text-gray-900 dark:text-white sticky top-0 bg-white dark:bg-gray-800 z-10 py-2">文章分類</h2>
             {/* 分類導航 - 在手機版時水平滾動，在桌面版時垂直排列 */}
-            <nav className="flex lg:flex-col gap-2 overflow-x-auto lg:overflow-x-visible pb-2 lg:pb-0 -mx-4 lg:mx-0 px-4 lg:px-0">
+            <nav className="flex lg:flex-col gap-2 overflow-x-auto lg:overflow-x-visible pb-2 lg:pb-0 -mx-4 lg:mx-0 px-4 lg:px-0 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600">
               {isLoading ? (
                 // 加載中顯示旋轉動畫
                 <div className="flex justify-center">
@@ -165,8 +169,8 @@ function HomePage() {
             </nav>
           </motion.div>
 
-          {/* 右側內容區 */}
-          <div className="space-y-4 sm:space-y-6 order-1 lg:order-2">
+          {/* 右側內容區 - 添加左側 margin 以避免被固定導航遮擋 */}
+          <div className="space-y-4 sm:space-y-6 order-1 lg:order-2 lg:col-start-2">
             {/* 歡迎區塊 */}
             <motion.div
               initial={{ y: 20, opacity: 0 }}
@@ -229,17 +233,19 @@ function HomePage() {
 
                     {/* 文章圖片 */}
                     {post.imageUrl && (
-                      <div className="mb-4 rounded-lg overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300">
-                        <img 
-                          src={post.imageUrl} 
-                          alt={post.title}
-                          className="w-full h-auto max-h-96 object-cover transform hover:scale-105 transition-transform duration-300"
-                          onError={(e) => {
-                            console.error('圖片載入失敗:', post.imageUrl);
-                            e.target.src = '/placeholder.png';
-                            e.target.onerror = null;
-                          }}
-                        />
+                      <div className="mb-4 rounded-lg overflow-hidden transition-shadow duration-300">
+                        <div className="aspect-w-4 aspect-h-3 max-w-2xl mx-auto">
+                          <img 
+                            src={post.imageUrl} 
+                            alt={post.title}
+                            className="w-full h-full object-cover transform hover:scale-[1.02] transition-transform duration-300 rounded-lg"
+                            onError={(e) => {
+                              console.error('圖片載入失敗:', post.imageUrl);
+                              e.target.src = '/placeholder.png';
+                              e.target.onerror = null;
+                            }}
+                          />
+                        </div>
                       </div>
                     )}
 
