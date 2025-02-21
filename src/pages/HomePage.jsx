@@ -239,7 +239,7 @@ function HomePage() {
                     </div>
 
                     {/* 文章內容 */}
-                    <p className="text-gray-600 mb-4 text-sm sm:text-base leading-relaxed">{post.content}</p>
+                    <pre className="text-gray-600 mb-4 text-sm sm:text-base leading-relaxed whitespace-pre-wrap break-words font-sans">{post.content}</pre>
 
                     {/* 互動按鈕 */}
                     <div className="flex items-center gap-4 text-gray-500">

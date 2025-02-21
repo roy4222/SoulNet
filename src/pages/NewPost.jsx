@@ -148,7 +148,7 @@ export default function NewPost() {
             const postData = {
                 imageUrl: imageUrl || '',
                 title: title.trim(),
-                content: content.trim(),
+                content: content.replace(/\n/g, '\n'),
                 category: category, // 使用category而不是topic
                 createdAt: serverTimestamp(),
                 author: {
@@ -230,15 +230,22 @@ export default function NewPost() {
                         />
                     </div>
 
-                    {/* 內容輸入 */}
+                    {/* 內容輸入區域 */}
                     <div>
+                        {/* 內容標籤 */}
                         <label htmlFor="content" className="block text-lg font-semibold text-gray-800 mb-2">內容</label>
+                        {/* 多行文本輸入框 */}
                         <textarea
                             id="content"
                             value={content}
                             onChange={(e) => setContent(e.target.value)}
                             rows="8"
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition duration-200 resize-none"
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition duration-200"
+                            style={{
+                                whiteSpace: 'pre-wrap',     // 保留換行和空格
+                                wordWrap: 'break-word',     // 允許長單詞換行
+                                overflowWrap: 'break-word'  // 確保內容不會溢出容器
+                            }}
                             placeholder="分享你的想法..."
                         />
                     </div>
