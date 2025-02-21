@@ -5,6 +5,8 @@ import { useState, useEffect, useRef } from 'react';
 import { getAuth, onAuthStateChanged, signOut } from 'firebase/auth';
 import { auth } from '../utils/firebase';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useTheme } from '../contexts/themeContext';
+import MobileMenu from './MobileMenu';
 
 // 預設頭像URL
 const DEFAULT_AVATAR = 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSCvBNjFR_6BVhW3lFNwF0oEk2N8JXjeiaSqg&s';
@@ -26,6 +28,7 @@ export default function Header() {
     const navigate = useNavigate(); // 用於頁面導航的鉤子
     const dropdownRef = useRef(null); // 下拉菜單的引用，用於檢測外部點擊
     const menuRef = useRef(null); // 漢堡菜單的引用，用於檢測外部點擊
+    const { isDarkMode, toggleTheme } = useTheme();
 
     // 顯示通知的函數
     const displayNotification = (message) => {
@@ -102,7 +105,7 @@ export default function Header() {
 
     return (
         // 導航欄容器，使用白色背景和陰影效果，固定在頂部
-        <nav className="fixed top-0 left-0 right-0 bg-white z-50 shadow-md">
+        <nav className={`fixed top-0 left-0 right-0 bg-white dark:bg-gray-900 z-50 shadow-md`}>
             {/* 內容限制寬度並置中 */}
             <div className="max-w-6xl mx-auto px-4">
                 {/* Flex 容器，用於排列導航欄內的元素 */}
@@ -111,7 +114,7 @@ export default function Header() {
                     <div className="flex items-center">
                         <Link to={ROUTES.HOME} className="flex items-center">
                             <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRu6w1L1n_jpEO94b80gNhWHTvkpCtCHvui2Q&s" alt="Logo" className="h-8 w-auto mr-4" />
-                            <span className="font-semibold text-xl text-gray-800">SoulNet</span>
+                            <span className="font-semibold text-xl text-gray-800 dark:text-gray-200">SoulNet</span>
                         </Link>
                     </div>
 
@@ -121,7 +124,7 @@ export default function Header() {
                             <Link 
                                 key={link.to} 
                                 to={link.to} 
-                                className="text-gray-600 hover:text-gray-900"
+                                className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-300"
                             >
                                 {link.text}
                             </Link>
@@ -133,12 +136,12 @@ export default function Header() {
                         <div className="relative w-full">
                             <input 
                                 type="text" 
-                                className="w-full border rounded-full py-2 px-4 text-gray-700 leading-tight focus:outline-none focus:border-blue-500" 
+                                className="w-full border rounded-full py-2 px-4 text-gray-700 dark:text-gray-300 leading-tight focus:outline-none focus:border-blue-500 dark:focus:border-blue-400" 
                                 placeholder="搜尋..." 
                             />
                             <button className="absolute right-0 top-0 mt-2 mr-4">
                                 <svg 
-                                    className="h-5 w-5 text-gray-400" 
+                                    className="h-5 w-5 text-gray-400 dark:text-gray-500" 
                                     fill="none" 
                                     strokeLinecap="round" 
                                     strokeLinejoin="round" 
@@ -160,11 +163,11 @@ export default function Header() {
                                 {/* 發表文章按鈕 */}
                                 <Link 
                                     to={ROUTES.NEW_POST}
-                                    className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition duration-300 flex items-center space-x-2"
+                                    className="bg-blue-500 dark:bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-600 dark:hover:bg-blue-700 transition duration-300 shadow-md flex items-center space-x-2"
                                 >
                                     {/* 加號圖標 */}
                                     <svg 
-                                        className="w-5 h-5" 
+                                        className="w-5 h-5 flex-shrink-0" 
                                         fill="none" 
                                         stroke="currentColor" 
                                         viewBox="0 0 24 24"
@@ -177,7 +180,7 @@ export default function Header() {
                                         />
                                     </svg>
                                     {/* 按鈕文字 */}
-                                    <span>發表文章</span>
+                                    <span className="whitespace-nowrap">發表文章</span>
                                 </Link>
                                 <div className="relative" ref={dropdownRef}>
                                     {/* 用戶頭像按鈕，點擊時切換下拉選單的顯示狀態 */}
@@ -188,7 +191,7 @@ export default function Header() {
                                         <img 
                                             src={user.photoURL || DEFAULT_AVATAR}
                                             alt="用戶頭像" 
-                                            className="w-10 h-10 rounded-full border-2 border-blue-500 hover:border-blue-600 transition-colors duration-200"
+                                            className="w-10 h-10 rounded-full border-2 border-blue-500 dark:border-blue-600 hover:border-blue-600 dark:hover:border-blue-700 transition-colors duration-200"
                                         />
                                     </button>
 
@@ -200,21 +203,21 @@ export default function Header() {
                                                 initial={{ opacity: 0, y: -10 }}
                                                 animate={{ opacity: 1, y: 0 }}
                                                 exit={{ opacity: 0, y: -10 }}
-                                                className="absolute right-0 mt-2 w-50 bg-white rounded-lg shadow-xl py-2 z-50"
+                                                className="absolute right-0 mt-2 w-50 bg-white dark:bg-gray-800 rounded-lg shadow-xl py-2 z-50"
                                             >
                                                 {/* 用戶資訊區塊 */}
-                                                <div className="px-4 py-2 border-b border-gray-100 ">
-                                                    <p className="text-sm font-semibold text-gray-700">
+                                                <div className="px-4 py-2 border-b border-gray-100 dark:border-gray-700 ">
+                                                    <p className="text-sm font-semibold text-gray-700 dark:text-gray-200">
                                                         {user.displayName || '使用者'}
                                                     </p>
-                                                    <p className="text-sm text-gray-500">
+                                                    <p className="text-sm text-gray-500 dark:text-gray-400">
                                                         {user.email}
                                                     </p>
                                                 </div>
                                                 {/* 個人資料連結 */}
                                                 <Link 
                                                     to="/profile" 
-                                                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors duration-200"
+                                                    className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
                                                     onClick={() => setShowDropdown(false)}
                                                 >
                                                     個人資料
@@ -225,7 +228,7 @@ export default function Header() {
                                                         handleSignOut();
                                                         setShowDropdown(false);
                                                     }}
-                                                    className="block w-full text-left text-red-600 hover:bg-gray-100 px-4 py-2 rounded-lg transition-colors duration-200"
+                                                    className="block w-full text-left text-red-600 dark:text-red-500 hover:bg-gray-100 dark:hover:bg-gray-700 px-4 py-2 rounded-lg transition-colors duration-200"
                                                 >
                                                     登出
                                                 </button>
@@ -233,19 +236,35 @@ export default function Header() {
                                         )}
                                     </AnimatePresence>
                                 </div>
+                                {/* 主題切換按鈕 */}
+                                <button
+                                    onClick={toggleTheme}
+                                    className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200"
+                                    aria-label="切換暗黑模式"
+                                >
+                                    {isDarkMode ? (
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6 text-yellow-500">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" />
+                                        </svg>
+                                    ) : (
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6 text-gray-700">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" />
+                                        </svg>
+                                    )}
+                                </button>
                             </>
                         ) : (
                             // 如果用戶未登入，顯示登入和註冊按鈕
                             <div className="flex space-x-4">
                                 <Link 
                                     to="/sign" 
-                                    className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition duration-300 shadow-md"
+                                    className="bg-indigo-600 dark:bg-indigo-700 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 dark:hover:bg-indigo-800 transition duration-300 shadow-md"
                                 >
                                     登入
                                 </Link>
                                 <Link 
                                     to="/register" 
-                                    className="bg-pink-500 text-white px-4 py-2 rounded-lg hover:bg-pink-600 transition duration-300 shadow-md"
+                                    className="bg-pink-500 dark:bg-pink-600 text-white px-4 py-2 rounded-lg hover:bg-pink-600 dark:hover:bg-pink-700 transition duration-300 shadow-md"
                                 >
                                     註冊
                                 </Link>
@@ -253,202 +272,61 @@ export default function Header() {
                         )}
                     </div>
 
-                    {/* 漢堡選單按鈕 - 只在手機版顯示 */}
-                    <button 
-                        className="lg:hidden p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200"
-                        onClick={() => setIsMenuOpen(!isMenuOpen)}
-                        aria-label="打開選單"
-                    >
-                        <svg 
-                            className="w-6 h-6 text-gray-600" 
-                            fill="none" 
-                            stroke="currentColor" 
-                            viewBox="0 0 24 24"
+                    {/* 手機版選單按鈕 */}
+                    <div className="lg:hidden flex items-center">
+                        <button
+                            onClick={() => setIsMenuOpen(!isMenuOpen)}
+                            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200"
+                            aria-label="開啟選單"
                         >
-                            <path 
-                                strokeLinecap="round" 
-                                strokeLinejoin="round" 
-                                strokeWidth="2" 
-                                d={isMenuOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"}
-                            />
-                        </svg>
-                    </button>
+                            <svg
+                                className="w-6 h-6 text-gray-600 dark:text-gray-400"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                {isMenuOpen ? (
+                                    <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth="2"
+                                        d="M6 18L18 6M6 6l12 12"
+                                    />
+                                ) : (
+                                    <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth="2"
+                                        d="M4 6h16M4 12h16M4 18h16"
+                                    />
+                                )}
+                            </svg>
+                        </button>
+                    </div>
                 </div>
             </div>
 
-            {/* 漢堡選單側邊欄 */}
-            <AnimatePresence>
-                {isMenuOpen && (
-                    <>
-                        {/* 背景遮罩 */}
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 0.5 }}
-                            exit={{ opacity: 0 }}
-                            className="fixed inset-0 bg-black lg:hidden"
-                            onClick={() => setIsMenuOpen(false)}
-                        />
-                        {/* 側邊欄 */}
-                        <motion.div
-                            ref={menuRef}
-                            initial={{ x: '100%' }}
-                            animate={{ x: 0 }}
-                            exit={{ x: '100%' }}
-                            transition={{ type: 'tween', duration: 0.3 }}
-                            className="fixed top-0 right-0 h-full w-68 bg-white shadow-xl lg:hidden z-50"
-                        >
-                            {/* 側邊欄內容 */}
-                            <div className="flex flex-col h-full">
-                                <div className="p-4">
-                                    {/* 用戶資訊區域 */}
-                                    {user ? (
-                                        <div>
-                                            {/* 用戶頭像和個人信息 */}
-                                            <div className="mb-6">
-                                                <div className="flex items-center space-x-3 mb-4">
-                                                    {/* 用戶頭像 */}
-                                                    <img 
-                                                        src={user.photoURL || DEFAULT_AVATAR}
-                                                        alt="用戶頭像" 
-                                                        className="w-12 h-12 rounded-full border-2 border-blue-500"
-                                                    />
-                                                    {/* 用戶名稱和郵箱 */}
-                                                    <div>
-                                                        <p className="font-semibold text-gray-800">
-                                                            {user.displayName || '使用者'}
-                                                        </p>
-                                                        <p className="text-sm text-gray-500">
-                                                            {user.email}
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            
-                                            {/* 發表文章按鈕 */}
-                                            <Link 
-                                                to={ROUTES.NEW_POST}
-                                                className="block w-full mb-6 bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition duration-300"
-                                                onClick={() => setIsMenuOpen(false)}
-                                            >
-                                                <div className="flex items-center justify-center space-x-2">
-                                                    {/* 加號圖標 */}
-                                                    <svg 
-                                                        className="w-5 h-5" 
-                                                        fill="none" 
-                                                        stroke="currentColor" 
-                                                        viewBox="0 0 24 24"
-                                                    >
-                                                        <path 
-                                                            strokeLinecap="round" 
-                                                            strokeLinejoin="round" 
-                                                            strokeWidth="2" 
-                                                            d="M12 4v16m8-8H4"
-                                                        />
-                                                    </svg>
-                                                    {/* 按鈕文字 */}
-                                                    <span>發表文章</span>
-                                                </div>
-                                            </Link>
-                                        </div>
-                                    ) : (
-                                        <div className="mb-6 space-y-2">
-                                            <Link 
-                                                to="/sign" 
-                                                className="block w-full text-center bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition duration-300 shadow-md"
-                                                onClick={() => setIsMenuOpen(false)}
-                                            >
-                                                登入
-                                            </Link>
-                                            <Link 
-                                                to="/register" 
-                                                className="block w-full text-center bg-pink-500 text-white px-4 py-2 rounded-lg hover:bg-pink-600 transition duration-300 shadow-md"
-                                                onClick={() => setIsMenuOpen(false)}
-                                            >
-                                                註冊
-                                            </Link>
-                                        </div>
-                                    )}
+            {/* 手機版選單 */}
+            <MobileMenu 
+                isOpen={isMenuOpen}
+                onClose={() => setIsMenuOpen(false)}
+                user={user}
+                navLinks={navLinks}
+                handleSignOut={handleSignOut}
+                isDarkMode={isDarkMode}
+                toggleTheme={toggleTheme}
+                menuRef={menuRef}
+            />
 
-                                    {/* 搜索欄 */}
-                                    <div className="mb-6">
-                                        <div className="relative">
-                                            <input 
-                                                type="text" 
-                                                className="w-full border rounded-full py-2 px-4 text-gray-700 leading-tight focus:outline-none focus:border-blue-500" 
-                                                placeholder="搜尋..." 
-                                            />
-                                            <button className="absolute right-0 top-0 mt-2 mr-4">
-                                                <svg 
-                                                    className="h-5 w-5 text-gray-400" 
-                                                    fill="none" 
-                                                    strokeLinecap="round" 
-                                                    strokeLinejoin="round" 
-                                                    strokeWidth="2" 
-                                                    viewBox="0 0 24 24" 
-                                                    stroke="currentColor"
-                                                >
-                                                    <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                                                </svg>
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                    {/* 導航連結 */}
-                                    <div className="space-y-2">
-                                        {navLinks.map(link => (
-                                            <Link 
-                                                key={link.to} 
-                                                to={link.to} 
-                                                className="block text-gray-600 hover:text-gray-900 hover:bg-gray-100 px-4 py-2 rounded-lg transition-colors duration-200"
-                                                onClick={() => setIsMenuOpen(false)}
-                                            >
-                                                {link.text}
-                                            </Link>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                {/* 底部選項 */}
-                                {user && (
-                                    <div className="mt-auto p-4 border-t border-gray-200">
-                                        <Link 
-                                            to="/profile" 
-                                            className="block text-gray-600 hover:text-gray-900 hover:bg-gray-100 px-4 py-2 rounded-lg transition-colors duration-200 mb-2"
-                                            onClick={() => setIsMenuOpen(false)}
-                                        >
-                                            個人資料
-                                        </Link>
-                                        <button 
-                                            onClick={() => {
-                                                handleSignOut();
-                                                setIsMenuOpen(false);
-                                            }}
-                                            className="block w-full text-left text-red-600 hover:text-red-700 hover:bg-gray-100 px-4 py-2 rounded-lg transition-colors duration-200"
-                                        >
-                                            登出
-                                        </button>
-                                    </div>
-                                )}
-                            </div>
-                        </motion.div>
-                    </>
-                )}
-            </AnimatePresence>
-
-            {/* 通知提示：當 showNotification 為 true 時顯示 */}
+            {/* 通知提示 */}
             <AnimatePresence>
                 {showNotification && (
                     <motion.div
-                        // 初始狀態：完全透明且向上偏移 50px
                         initial={{ opacity: 0, y: -50 }}
-                        // 動畫結束狀態：完全不透明且回到原位
                         animate={{ opacity: 1, y: 0 }}
-                        // 退場動畫：恢復到初始狀態
                         exit={{ opacity: 0, y: -50 }}
-                        // 固定位置、顏色、內邊距、圓角和陰影樣式
-                        className="fixed top-4 right-4 bg-gray-500 text-white px-4 py-2 rounded shadow-lg"
+                        className="fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50"
                     >
-                        {/* 顯示通知訊息 */}
                         {notificationMessage}
                     </motion.div>
                 )}

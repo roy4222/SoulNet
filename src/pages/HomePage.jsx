@@ -116,7 +116,7 @@ function HomePage() {
   });
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-8">
         {/* 使用條件式 grid 布局 */}
         <div className="grid grid-cols-1 lg:grid-cols-[240px,1fr] gap-4 lg:gap-8">
@@ -125,30 +125,28 @@ function HomePage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.5 }}
-            className="bg-white rounded-lg shadow-md p-4 lg:h-fit order-2 lg:order-1"
+            className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 lg:h-fit order-2 lg:order-1"
           >
-            <h2 className="text-lg font-semibold mb-4 px-2 lg:block hidden">文章分類</h2>
+            <h2 className="text-lg font-semibold mb-4 px-2 lg:block hidden text-gray-900 dark:text-white">文章分類</h2>
             {/* 分類導航 - 在手機版時水平滾動，在桌面版時垂直排列 */}
             <nav className="flex lg:flex-col gap-2 overflow-x-auto lg:overflow-x-visible pb-2 lg:pb-0 -mx-4 lg:mx-0 px-4 lg:px-0">
               {isLoading ? (
                 // 加載中顯示旋轉動畫
                 <div className="flex justify-center">
-                  <svg className="animate-spin h-5 w-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <svg className="animate-spin h-5 w-5 text-gray-500 dark:text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S16.627 6 12 6z"></path>
                   </svg>
                 </div>
               ) : (
-                // 分類按鈕列表
                 categories.map(category => (
                   <button
                     key={category.id}
                     onClick={() => setSelectedCategory(category.id)}
                     className={`px-4 py-2 rounded-lg text-left transition-all whitespace-nowrap lg:whitespace-normal flex-shrink-0 lg:flex-shrink ${
-                      // 根據選中狀態設置不同的樣式
                       selectedCategory === category.id
                         ? 'bg-blue-500 text-white'
-                        : 'hover:bg-gray-100 text-gray-600'
+                        : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300'
                     }`}
                   >
                     {category.name}
@@ -167,10 +165,10 @@ function HomePage() {
               transition={{ delay: 0.2 }}
               className="text-center mb-4 sm:mb-8"
             >
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-800 mb-2 sm:mb-4">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-800 dark:text-white mb-2 sm:mb-4">
                 歡迎來到SoulNet
               </h1>
-              <p className="text-base sm:text-lg lg:text-xl text-gray-600">
+              <p className="text-base sm:text-lg lg:text-xl text-gray-600 dark:text-gray-300">
                 連結靈魂，共創精彩，分享生活的每一刻
               </p>
             </motion.div>
@@ -179,7 +177,7 @@ function HomePage() {
             <div className="grid gap-4 sm:gap-6">
               {isLoadingPosts ? (
                 <div className="flex justify-center">
-                  <svg className="animate-spin h-5 w-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <svg className="animate-spin h-5 w-5 text-gray-500 dark:text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S16.627 6 12 6z"></path>
                   </svg>
@@ -191,7 +189,7 @@ function HomePage() {
                     initial={{ y: 20, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
                     transition={{ duration: 0.3 }}
-                    className="bg-white p-4 sm:p-6 rounded-xl shadow-md"
+                    className="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-xl shadow-md"
                   >
                     {/* 文章標題和作者資訊 */}
                     <div className="flex items-center gap-3 mb-4">
@@ -203,9 +201,9 @@ function HomePage() {
                       />
                       <div>
                         {/* 作者名稱或郵箱 */}
-                        <h3 className="font-medium">{post.author?.email || post.author?.displayName || '匿名用戶'}</h3>
+                        <h3 className="font-medium text-gray-900 dark:text-white">{post.author?.email || post.author?.displayName || '匿名用戶'}</h3>
                         {/* 發文時間 */}
-                        <p className="text-sm text-gray-500">
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
                           {post.createdAt?.toDate().toLocaleString('zh-TW', {
                             year: 'numeric',
                             month: 'long',
@@ -218,10 +216,10 @@ function HomePage() {
                     </div>
 
                     {/* 文章標題 */}
-                    <h2 className="text-lg sm:text-xl font-semibold mb-2">{post.title}</h2>
+                    <h2 className="text-lg sm:text-xl font-semibold mb-2 text-gray-900 dark:text-white">{post.title}</h2>
 
                     {/* 文章圖片 */}
-                    {post.imageUrl ? (
+                    {post.imageUrl && (
                       <div className="mb-4 rounded-lg overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300">
                         <img 
                           src={post.imageUrl} 
@@ -234,20 +232,20 @@ function HomePage() {
                           }}
                         />
                       </div>
-                    ) : null}
+                    )}
 
                     {/* 文章分類 */}
                     <div className="mb-4">
-                      <span className="inline-block px-3 py-1 rounded-full text-sm bg-gray-100 text-gray-600">
+                      <span className="inline-block px-3 py-1 rounded-full text-sm bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
                         {categories.find(c => c.id === (post.topic || post.category))?.name || '未分類'}
                       </span>
                     </div>
 
                     {/* 文章內容 */}
-                    <pre className="text-gray-600 mb-4 text-sm sm:text-base leading-relaxed whitespace-pre-wrap break-words font-sans">{post.content}</pre>
+                    <pre className="text-gray-600 dark:text-gray-300 mb-4 text-sm sm:text-base leading-relaxed whitespace-pre-wrap break-words font-sans">{post.content}</pre>
 
                     {/* 互動按鈕 */}
-                    <div className="flex items-center gap-4 text-gray-500">
+                    <div className="flex items-center gap-4 text-gray-500 dark:text-gray-400">
                       <button className="flex items-center gap-1 hover:text-blue-500 transition-colors">
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
