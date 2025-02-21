@@ -195,18 +195,23 @@ function HomePage() {
                   >
                     {/* 文章標題和作者資訊 */}
                     <div className="flex items-center gap-3 mb-4">
+                      {/* 作者頭像 */}
                       <img 
                         src={post.author?.photoURL || 'https://api.dicebear.com/7.x/avataaars/svg?seed=default'} 
                         alt={post.author?.displayName || '匿名用戶'} 
                         className="w-10 h-10 rounded-full object-cover"
                       />
                       <div>
+                        {/* 作者名稱或郵箱 */}
                         <h3 className="font-medium">{post.author?.email || post.author?.displayName || '匿名用戶'}</h3>
+                        {/* 發文時間 */}
                         <p className="text-sm text-gray-500">
-                          {post.createdAt?.toDate().toLocaleDateString('zh-TW', {
+                          {post.createdAt?.toDate().toLocaleString('zh-TW', {
                             year: 'numeric',
                             month: 'long',
-                            day: 'numeric'
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
                           })}
                         </p>
                       </div>
