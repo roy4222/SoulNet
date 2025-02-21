@@ -13,6 +13,15 @@ function HomePage() {
   const [isLoading, setIsLoading] = useState(true); // 加載狀態
   const [posts, setPosts] = useState([]); // 文章列表，初始化為空數組
   const [isLoadingPosts, setIsLoadingPosts] = useState(true); // 文章加載狀態
+  const [expandedPosts, setExpandedPosts] = useState({}); // 追蹤文章展開狀態
+
+  // 切換文章展開狀態的函數
+  const togglePostExpansion = (postId) => {
+    setExpandedPosts(prev => ({
+      ...prev,
+      [postId]: !prev[postId]
+    }));
+  };
 
   // 使用 useEffect 鉤子在組件加載時獲取分類
   useEffect(() => {
@@ -242,7 +251,28 @@ function HomePage() {
                     </div>
 
                     {/* 文章內容 */}
-                    <pre className="text-gray-600 dark:text-gray-300 mb-4 text-sm sm:text-base leading-relaxed whitespace-pre-wrap break-words font-sans">{post.content}</pre>
+                    <div className="text-gray-600 dark:text-gray-300 mb-4 text-sm sm:text-base leading-relaxed">
+                      {post.content.length > 150 ? (
+                        <>
+                          {/* 使用 pre 標籤來保留文本格式，同時應用自定義樣式 */}
+                          <pre className="whitespace-pre-wrap break-words font-sans">
+                            {/* 根據展開狀態顯示全文或截斷的內容 */}
+                            {expandedPosts[post.id] ? post.content : `${post.content.slice(0, 150)}...`}
+                          </pre>
+                          {/* 切換展開/收起的按鈕 */}
+                          <button
+                            onClick={() => togglePostExpansion(post.id)}
+                            className="mt-2 text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
+                          >
+                            {/* 根據展開狀態顯示不同的按鈕文字 */}
+                            {expandedPosts[post.id] ? '' : '顯示更多'}
+                          </button>
+                        </>
+                      ) : (
+                        // 如果內容少於150字符，直接顯示全文
+                        <pre className="whitespace-pre-wrap break-words font-sans">{post.content}</pre>
+                      )}
+                    </div>
 
                     {/* 互動按鈕 */}
                     <div className="flex items-center gap-4 text-gray-500 dark:text-gray-400">
