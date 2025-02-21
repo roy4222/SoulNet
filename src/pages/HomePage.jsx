@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { db } from '../utils/firebase';
 import { collection, getDocs } from 'firebase/firestore';
+import { Fab } from '@mui/material';
+import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 
 // 定義HomePage組件
 function HomePage() {
@@ -124,6 +126,14 @@ function HomePage() {
     return post.category === selectedCategory || post.topic === selectedCategory;
   });
 
+  // 回到頂部函數
+  const scrollToTop = () => {
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-8">
@@ -231,6 +241,31 @@ function HomePage() {
                     {/* 文章標題 */}
                     <h2 className="text-lg sm:text-xl font-semibold mb-2 text-gray-900 dark:text-white">{post.title}</h2>
 
+                     {/* 文章內容 */}
+                     <div className="text-gray-600 dark:text-gray-300 mb-4 text-sm sm:text-base leading-relaxed">
+                      {post.content.length > 150 ? (
+                        <>
+                          {/* 使用 pre 標籤來保留文本格式，同時應用自定義樣式 */}
+                          <pre className="whitespace-pre-wrap break-words font-sans">
+                            {/* 根據展開狀態顯示全文或截斷的內容 */}
+                            {expandedPosts[post.id] ? post.content : `${post.content.slice(0, 150)}...`}
+                          </pre>
+                          {/* 切換展開/收起的按鈕 */}
+                          <button
+                            onClick={() => togglePostExpansion(post.id)}
+                            className="mt-2 text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
+                          >
+                            {/* 根據展開狀態顯示不同的按鈕文字 */}
+                            {expandedPosts[post.id] ? '' : '顯示更多'}
+                          </button>
+                        </>
+                      ) : (
+                        // 如果內容少於150字符，直接顯示全文
+                        <pre className="whitespace-pre-wrap break-words font-sans">{post.content}</pre>
+                      )}
+                    </div>
+
+
                     {/* 文章圖片 */}
                     {post.imageUrl && (
                       <div className="mb-4 rounded-lg overflow-hidden transition-shadow duration-300">
@@ -256,30 +291,7 @@ function HomePage() {
                       </span>
                     </div>
 
-                    {/* 文章內容 */}
-                    <div className="text-gray-600 dark:text-gray-300 mb-4 text-sm sm:text-base leading-relaxed">
-                      {post.content.length > 150 ? (
-                        <>
-                          {/* 使用 pre 標籤來保留文本格式，同時應用自定義樣式 */}
-                          <pre className="whitespace-pre-wrap break-words font-sans">
-                            {/* 根據展開狀態顯示全文或截斷的內容 */}
-                            {expandedPosts[post.id] ? post.content : `${post.content.slice(0, 150)}...`}
-                          </pre>
-                          {/* 切換展開/收起的按鈕 */}
-                          <button
-                            onClick={() => togglePostExpansion(post.id)}
-                            className="mt-2 text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
-                          >
-                            {/* 根據展開狀態顯示不同的按鈕文字 */}
-                            {expandedPosts[post.id] ? '' : '顯示更多'}
-                          </button>
-                        </>
-                      ) : (
-                        // 如果內容少於150字符，直接顯示全文
-                        <pre className="whitespace-pre-wrap break-words font-sans">{post.content}</pre>
-                      )}
-                    </div>
-
+                   
                     {/* 互動按鈕 */}
                     <div className="flex items-center gap-4 text-gray-500 dark:text-gray-400">
                       <button className="flex items-center gap-1 hover:text-blue-500 transition-colors">
@@ -302,6 +314,29 @@ function HomePage() {
           </div>
         </div>
       </div>
+      {/* 回到頂部按鈕 */}
+      <motion.div
+        // 初始狀態：完全透明
+        initial={{ opacity: 0 }}
+        // 動畫狀態：完全不透明
+        animate={{ opacity: 1 }}
+        // 動畫持續時間：0.3秒
+        transition={{ duration: 0.3 }}
+        // 固定在右下角，確保在其他元素之上
+        className="fixed bottom-6 right-6 z-50"
+      >
+        <button
+          // 點擊時觸發回到頂部函數
+          onClick={scrollToTop}
+          // 按鈕樣式：漸變背景、圓形、陰影效果、過渡動畫等
+          className="bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-full p-3 shadow-lg hover:shadow-xl transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
+        >
+          {/* 向上箭頭SVG圖標 */}
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+          </svg>
+        </button>
+      </motion.div>
     </div>
   );
 };
