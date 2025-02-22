@@ -42,18 +42,23 @@ export default function NewPost() {
     const db = getFirestore();
 
     // 處理拖放事件
+    // 阻止默認行為並停止事件傳播
     const handleDragOver = (e) => {
         e.preventDefault();
         e.stopPropagation();
     };
 
+    // 處理檔案拖放
     const handleDrop = (e) => {
         e.preventDefault();
         e.stopPropagation();
         
+        // 如果正在加載中，則不處理
         if (loading) return;
 
+        // 獲取拖放的檔案
         const files = e.dataTransfer.files;
+        // 如果有檔案，則調用handleImageChange處理
         if (files && files[0]) {
             handleImageChange({ target: { files: [files[0]] } });
         }
@@ -61,13 +66,18 @@ export default function NewPost() {
 
     // 處理貼上事件
     const handlePaste = (e) => {
+        // 如果正在加載中，則不處理
         if (loading) return;
 
+        // 獲取剪貼板數據
         const items = e.clipboardData?.items;
         if (!items) return;
 
+        // 遍歷剪貼板項目
         for (const item of items) {
+            // 如果是圖片類型
             if (item.type.startsWith('image/')) {
+                // 獲取檔案並調用handleImageChange處理
                 const file = item.getAsFile();
                 handleImageChange({ target: { files: [file] } });
                 break;

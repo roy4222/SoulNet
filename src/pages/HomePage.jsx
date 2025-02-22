@@ -4,6 +4,7 @@ import { db } from '../utils/firebase';
 import { collection, getDocs } from 'firebase/firestore';
 import { Fab } from '@mui/material';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
+import { Link, useNavigate } from 'react-router-dom';
 
 // 定義HomePage組件
 function HomePage() {
@@ -18,6 +19,7 @@ function HomePage() {
   const [expandedPosts, setExpandedPosts] = useState({}); // 追蹤文章展開狀態
   const [isImageModalOpen, setIsImageModalOpen] = useState(false); // 控制圖片 modal 的開關狀態
   const [selectedImage, setSelectedImage] = useState(null); // 當前選中的圖片 URL
+  const navigate = useNavigate();
 
   // 切換文章展開狀態的函數
   const togglePostExpansion = (postId) => {
@@ -209,111 +211,133 @@ function HomePage() {
                 </div>
               ) : (
                 filteredPosts.map(post => (
-                  <motion.article
+                  <Link 
+                    to={`/post/${post.id}`}
                     key={post.id}
-                    initial={{ y: 20, opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    transition={{ duration: 0.3 }}
-                    className="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-xl shadow-md"
+                    className="block"
                   >
-                    {/* 文章標題和作者資訊 */}
-                    <div className="flex items-center gap-3 mb-4">
-                      {/* 作者頭像 */}
-                      <img 
-                        src={post.author?.photoURL || 'https://api.dicebear.com/7.x/avataaars/svg?seed=default'} 
-                        alt={post.author?.displayName || '匿名用戶'} 
-                        className="w-10 h-10 rounded-full object-cover"
-                      />
-                      <div>
-                        {/* 作者名稱或郵箱 */}
-                        <h3 className="font-medium text-gray-900 dark:text-white">{post.author?.email || post.author?.displayName || '匿名用戶'}</h3>
-                        {/* 發文時間 */}
-                        <p className="text-sm text-gray-500 dark:text-gray-400">
-                          {post.createdAt?.toDate().toLocaleString('zh-TW', {
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          })}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* 文章標題 */}
-                    <h2 className="text-lg sm:text-xl font-semibold mb-2 text-gray-900 dark:text-white">{post.title}</h2>
-
-                     {/* 文章內容 */}
-                     <div className="text-gray-600 dark:text-gray-300 mb-4 text-sm sm:text-base leading-relaxed">
-                      {post.content.length > 150 ? (
-                        <>
-                          {/* 使用 pre 標籤來保留文本格式，同時應用自定義樣式 */}
-                          <pre className="whitespace-pre-wrap break-words font-sans">
-                            {/* 根據展開狀態顯示全文或截斷的內容 */}
-                            {expandedPosts[post.id] ? post.content : `${post.content.slice(0, 150)}...`}
-                          </pre>
-                          {/* 切換展開/收起的按鈕 */}
-                          <button
-                            onClick={() => togglePostExpansion(post.id)}
-                            className="mt-2 text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
-                          >
-                            {/* 根據展開狀態顯示不同的按鈕文字 */}
-                            {expandedPosts[post.id] ? '' : '顯示更多'}
-                          </button>
-                        </>
-                      ) : (
-                        // 如果內容少於150字符，直接顯示全文
-                        <pre className="whitespace-pre-wrap break-words font-sans">{post.content}</pre>
-                      )}
-                    </div>
-
-
-                    {/* 文章圖片 */}
-                    {post.imageUrl && (
-                      <div className="mb-4 rounded-lg overflow-hidden transition-shadow duration-300">
-                        <div className="aspect-w-4 aspect-h-3 max-w-2xl mx-auto">
-                          <img 
-                            src={post.imageUrl} 
-                            alt={post.title}
-                            className="w-full h-full object-cover transform hover:scale-[1.02] transition-transform duration-300 rounded-lg cursor-pointer"
-                            onClick={() => {
-                              setSelectedImage(post.imageUrl);
-                              setIsImageModalOpen(true);
-                            }}
-                            onError={(e) => {
-                              console.error('圖片載入失敗:', post.imageUrl);
-                              e.target.src = '/placeholder.png';
-                              e.target.onerror = null;
-                            }}
-                          />
+                    <motion.article
+                      initial={{ y: 20, opacity: 0 }}
+                      animate={{ y: 0, opacity: 1 }}
+                      transition={{ duration: 0.3 }}
+                      className="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-xl shadow-md hover:shadow-lg transition-all duration-300"
+                    >
+                      {/* 文章標題和作者資訊 */}
+                      <div className="flex items-center gap-3 mb-4">
+                        {/* 作者頭像 */}
+                        <img 
+                          src={post.author?.photoURL || 'https://api.dicebear.com/7.x/avataaars/svg?seed=default'} 
+                          alt={post.author?.displayName || '匿名用戶'} 
+                          className="w-10 h-10 rounded-full object-cover"
+                        />
+                        <div>
+                          {/* 作者名稱或郵箱 */}
+                          <h3 className="font-medium text-gray-900 dark:text-white">{post.author?.email || post.author?.displayName || '匿名用戶'}</h3>
+                          {/* 發文時間 */}
+                          <p className="text-sm text-gray-500 dark:text-gray-400">
+                            {post.createdAt?.toDate().toLocaleString('zh-TW', {
+                              year: 'numeric',
+                              month: 'long',
+                              day: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </p>
                         </div>
                       </div>
-                    )}
 
-                    {/* 文章分類 */}
-                    <div className="mb-4">
-                      <span className="inline-block px-3 py-1 rounded-full text-sm bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
-                        {categories.find(c => c.id === (post.topic || post.category))?.name || '未分類'}
-                      </span>
-                    </div>
+                      {/* 文章標題 */}
+                      <h2 className="text-lg sm:text-xl font-semibold mb-2 text-gray-900 dark:text-white">{post.title}</h2>
 
-                   
-                    {/* 互動按鈕 */}
-                    <div className="flex items-center gap-4 text-gray-500 dark:text-gray-400">
-                      <button className="flex items-center gap-1 hover:text-blue-500 transition-colors">
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                        </svg>
-                        <span>讚</span>
-                      </button>
-                      <button className="flex items-center gap-1 hover:text-blue-500 transition-colors">
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                        </svg>
-                        <span>留言</span>
-                      </button>
-                    </div>
-                  </motion.article>
+                       {/* 文章內容 */}
+                       <div className="text-gray-600 dark:text-gray-300 mb-4 text-sm sm:text-base leading-relaxed">
+                        {post.content.length > 150 ? (
+                          <>
+                            {/* 使用 pre 標籤來保留文本格式，同時應用自定義樣式 */}
+                            <pre className="whitespace-pre-wrap break-words font-sans">
+                              {/* 根據展開狀態顯示全文或截斷的內容 */}
+                              {expandedPosts[post.id] ? post.content : `${post.content.slice(0, 150)}...`}
+                            </pre>
+                            {/* 切換展開/收起的按鈕 */}
+                            <button
+                              onClick={() => togglePostExpansion(post.id)}
+                              className="mt-2 text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
+                            >
+                              {/* 根據展開狀態顯示不同的按鈕文字 */}
+                              {expandedPosts[post.id] ? '' : '顯示更多'}
+                            </button>
+                          </>
+                        ) : (
+                          // 如果內容少於150字符，直接顯示全文
+                          <pre className="whitespace-pre-wrap break-words font-sans">{post.content}</pre>
+                        )}
+                      </div>
+
+
+                      {/* 文章圖片 */}
+                      {post.imageUrl && (
+                        <div className="mb-4 rounded-lg overflow-hidden transition-shadow duration-300">
+                          <div className="aspect-w-4 aspect-h-3 max-w-2xl mx-auto">
+                            <img 
+                              src={post.imageUrl} 
+                              alt={post.title}
+                              className="w-full h-full object-cover transform hover:scale-[1.02] transition-transform duration-300 rounded-lg cursor-pointer"
+                              onClick={() => {
+                                setSelectedImage(post.imageUrl);
+                                setIsImageModalOpen(true);
+                              }}
+                              onError={(e) => {
+                                console.error('圖片載入失敗:', post.imageUrl);
+                                e.target.src = '/placeholder.png';
+                                e.target.onerror = null;
+                              }}
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      {/* 文章分類 */}
+                      <div className="mb-4">
+                        <span className="inline-block px-3 py-1 rounded-full text-sm bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
+                          {categories.find(c => c.id === (post.topic || post.category))?.name || '未分類'}
+                        </span>
+                      </div>
+
+                     
+                      {/* 互動按鈕 */}
+                      <div 
+                        className="flex items-center gap-4 text-gray-500 dark:text-gray-400"
+                        onClick={e => e.preventDefault()}
+                      >
+                        <button 
+                          className="flex items-center gap-1 hover:text-blue-500 transition-colors"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            // 這裡添加點讚邏輯
+                          }}
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                          </svg>
+                          <span>讚</span>
+                        </button>
+                        <button 
+                          className="flex items-center gap-1 hover:text-blue-500 transition-colors"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            navigate(`/post/${post.id}#comments`);
+                          }}
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                          </svg>
+                          <span>留言</span>
+                        </button>
+                      </div>
+                    </motion.article>
+                  </Link>
                 ))
               )}
             </div>
@@ -346,7 +370,7 @@ function HomePage() {
         // 動畫持續時間：0.3秒
         transition={{ duration: 0.3 }}
         // 固定在右下角，確保在其他元素之上
-        className="fixed bottom-6 right-6 z-50"
+        className="fixed bottom-6 right-6"
       >
         <button
           // 點擊時觸發回到頂部函數
