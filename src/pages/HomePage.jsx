@@ -143,6 +143,14 @@ function HomePage() {
     });
   };
 
+  // 導航到貼文最上方的函數
+  const navigateToPost = (postId) => {
+    // 將頁面滾動到頂部
+    window.scrollTo(0, 0);
+    // 使用 React Router 的 navigate 函數跳轉到指定的貼文頁面
+    navigate(`/post/${postId}`);
+  };
+
   const handleLike = async (post) => {
     if (!currentUser) {
       navigate('/sign');
@@ -264,13 +272,13 @@ function HomePage() {
                   <Link 
                     to={`/post/${post.id}`}
                     key={post.id}
-                    className="block"
+                    onClick={() => window.scrollTo(0, 0)}
                   >
-                    <motion.article
-                      initial={{ y: 20, opacity: 0 }}
-                      animate={{ y: 0, opacity: 1 }}
+                    <motion.article 
+                      className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mb-4 cursor-pointer relative"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.3 }}
-                      className="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-xl shadow-md hover:shadow-lg transition-all duration-300"
                     >
                       {/* 文章標題和作者資訊 */}
                       <div className="flex items-center gap-3 mb-4">
@@ -299,30 +307,28 @@ function HomePage() {
                       {/* 文章標題 */}
                       <h2 className="text-lg sm:text-xl font-semibold mb-2 text-gray-900 dark:text-white">{post.title}</h2>
 
-                       {/* 文章內容 */}
-                       <div className="text-gray-600 dark:text-gray-300 mb-4 text-sm sm:text-base leading-relaxed">
-                        {post.content.length > 150 ? (
-                          <>
-                            {/* 使用 pre 標籤來保留文本格式，同時應用自定義樣式 */}
-                            <pre className="whitespace-pre-wrap break-words font-sans">
-                              {/* 根據展開狀態顯示全文或截斷的內容 */}
-                              {expandedPosts[post.id] ? post.content : `${post.content.slice(0, 150)}...`}
-                            </pre>
-                            {/* 切換展開/收起的按鈕 */}
-                            <button
-                              onClick={() => togglePostExpansion(post.id)}
-                              className="mt-2 text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
-                            >
-                              {/* 根據展開狀態顯示不同的按鈕文字 */}
-                              {expandedPosts[post.id] ? '' : '顯示更多'}
-                            </button>
-                          </>
-                        ) : (
-                          // 如果內容少於150字符，直接顯示全文
-                          <pre className="whitespace-pre-wrap break-words font-sans">{post.content}</pre>
+                      {/* 文章內容區塊 */}
+                      <div className="mb-4">
+                        {/* 顯示文章內容，根據展開狀態決定是否顯示全文 */}
+                        <p className="text-gray-800 dark:text-gray-200">
+                          {/* 如果文章已展開，顯示全文；否則只顯示前100個字符並加上省略號 */}
+                          {expandedPosts[post.id] ? post.content : `${post.content.slice(0, 100)}`}
+                        </p>
+                        {/* 當文章內容超過100個字符時，顯示"顯示更多"按鈕 */}
+                        {post.content.length > 100 && (
+                          <button
+                            className="text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 mt-2"
+                            onClick={(e) => {
+                              e.preventDefault(); // 防止事件冒泡到父元素
+                              e.stopPropagation(); // 停止事件傳播
+                              togglePostExpansion(post.id); // 切換文章展開狀態
+                            }}
+                          >
+                            {/* 根據當前展開狀態顯示不同的按鈕文字 */}
+                            {expandedPosts[post.id] ? '' : '顯示更多'}
+                          </button>
                         )}
                       </div>
-
 
                       {/* 文章圖片 */}
                       {post.imageUrl && (
@@ -355,7 +361,7 @@ function HomePage() {
 
                       {/* 互動按鈕 */}
                       <div 
-                        className="flex items-center gap-4 text-gray-500 dark:text-gray-400"
+                        className="flex items-center gap-4 text-gray-500 dark:text-gray-400 interaction-buttons"
                         onClick={e => e.preventDefault()}
                       >
                         {/* 點讚按鈕 */}
