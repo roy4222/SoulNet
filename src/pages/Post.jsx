@@ -32,6 +32,7 @@ function Post() {
   const [error, setError] = useState('');
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
+  const [views, setViews] = useState(0);
 
   // 格式化時間的輔助函數
   const formatTime = (timestamp) => {
@@ -51,32 +52,52 @@ function Post() {
     }
   };
 
-  // 使用 useEffect 在組件掛載時獲取文章數據
+  // 使用 useEffect 鉤子在組件掛載時獲取文章數據
   useEffect(() => {
+    // 定義異步函數 fetchPost 來獲取文章數據
     const fetchPost = async () => {
       try {
+        // 從 Firestore 數據庫獲取指定 id 的文章文檔
         const postDoc = await getDoc(doc(db, 'posts', id));
+
+        // 檢查文檔是否存在
         if (postDoc.exists()) {
+          // 獲取文檔數據
           const postData = postDoc.data();
+
+          // 設置文章狀態，包括 id 和所有文檔數據
           setPost({ 
             id: postDoc.id, 
             ...postData,
-            // 保持原始 Timestamp,在顯示時再轉換
+            // 保持原始 Timestamp，在顯示時再轉換
             createdAt: postData.createdAt
           });
+
+          // 更新文章的瀏覽次數
+          const currentViews = postData.views || 0;
+          // 在 Firestore 中更新瀏覽次數
+          await updateDoc(doc(db, 'posts', id), {
+            views: currentViews + 1
+          });
+          // 更新本地狀態中的瀏覽次數
+          setViews(currentViews + 1);
         } else {
+          // 如果文檔不存在，設置錯誤狀態
           setError('找不到這篇文章');
         }
       } catch (error) {
+        // 捕獲並處理任何錯誤
         console.error('Error fetching post:', error);
         setError('載入文章時發生錯誤');
       } finally {
+        // 無論成功與否，都將加載狀態設為 false
         setIsLoading(false);
       }
     };
 
+    // 調用 fetchPost 函數
     fetchPost();
-  }, [id]);
+  }, [id]); // 依賴項數組中包含 id，當 id 變化時重新執行 effect
 
   // 處理點讚功能
   const handleLike = async () => {
@@ -156,22 +177,28 @@ function Post() {
 
   // 處理轉發功能
   const handleRepost = async () => {
+    // 檢查用戶是否已登入，如果未登入則導向登入頁面
     if (!currentUser) {
       navigate('/sign');
       return;
     }
 
     try {
+      // 獲取文章的引用
       const postRef = doc(db, 'posts', id);
+      
+      // 更新文章文檔，將當前用戶ID添加到reposts陣列中
       await updateDoc(postRef, {
         reposts: arrayUnion(currentUser.uid)
       });
 
+      // 更新本地狀態，將當前用戶ID添加到reposts陣列中
       setPost(prev => ({
         ...prev,
         reposts: [...(prev.reposts || []), currentUser.uid]
       }));
     } catch (error) {
+      // 如果發生錯誤，將錯誤信息輸出到控制台
       console.error('Error reposting:', error);
     }
   };
@@ -286,13 +313,15 @@ function Post() {
             {/* 點讚按鈕 */}
             <button 
               onClick={handleLike}
-              className="flex items-center gap-2 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-all duration-200 group"
+              className="flex items-center gap-2 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-all duration-200 group relative"
             >
               {post.likes?.includes(currentUser?.uid) 
                 ? <FavoriteRoundedIcon className="w-6 h-6 text-red-500" />
                 : <FavoriteBorderRoundedIcon className="w-6 h-6 group-hover:text-red-500" />
               }
               <span className="text-sm font-medium">{post.likes?.length || 0}</span>
+              {/* 滑鼠懸停時顯示的提示文字 */}
+              <span className="invisible group-hover:visible absolute bottom-full mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded whitespace-nowrap">點讚</span>
             </button>
 
             {/* 評論按鈕 */}
@@ -300,18 +329,20 @@ function Post() {
               onClick={() => {
                 document.getElementById('comments')?.scrollIntoView({ behavior: 'smooth' });
               }}
-              className="flex items-center gap-2 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-all duration-200 group"
+              className="flex items-center gap-2 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-all duration-200 group relative"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" className="group-hover:text-blue-500">
                 <path fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 21a9 9 0 1 0-9-9c0 1.488.36 2.891 1 4.127L3 21l4.873-1c1.236.64 2.64 1 4.127 1"/>
               </svg>
               <span className="text-sm font-medium">{post.comments?.length || 0}</span>
+              {/* 滑鼠懸停時顯示的提示文字 */}
+              <span className="invisible group-hover:visible absolute bottom-full mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded whitespace-nowrap">評論</span>
             </button>
 
             {/* 轉發按鈕 */}
             <button 
               onClick={handleRepost}
-              className="flex items-center gap-2 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-all duration-200 group"
+              className="flex items-center gap-2 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-all duration-200 group relative"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 21 21" className="group-hover:text-green-500">
                 <g fill="none" fillRule="evenodd" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
@@ -321,20 +352,34 @@ function Post() {
                 </g>
               </svg>
               <span className="text-sm font-medium">{post.reposts?.length || 0}</span>
+               {/* 滑鼠懸停時顯示的提示文字 */}
+               <span className="invisible group-hover:visible absolute bottom-full mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded whitespace-nowrap">轉發</span>
             </button>
-
             {/* 分享按鈕 */}
             <button 
               onClick={handleShare}
-              className="flex items-center gap-2 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-all duration-200 group"
+              className="flex items-center gap-2 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-all duration-200 group relative"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" className="group-hover:text-blue-500">
                 <path fill="currentColor" d="M13 14h-2a9 9 0 0 0-7.968 4.81A10 10 0 0 1 3 18C3 12.477 7.477 8 13 8V3l10 8l-10 8z"/>
               </svg>
               <span className="text-sm font-medium">{post.shares || 0}</span>
+               {/* 滑鼠懸停時顯示的提示文字 */}
+               <span className="invisible group-hover:visible absolute bottom-full mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded whitespace-nowrap">分享</span>
             </button>
+
+            {/* 觀看次數 */}
+            <div className="flex items-center gap-2 p-2 group relative">
+              <svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 24 24" className="text-gray-500 dark:text-gray-400 w-5 h-5">
+                <path fill="none" stroke="currentColor" stroke-width="2" d="M16 5a4 4 0 1 1-8 0a4 4 0 0 1 8 0Zm-1 18v-6h3v-2c0-3.34-2.76-5.97-6-6c-3.21.03-6 2.66-6 6v2h3v6m-5.5 0h17z"/>
+              </svg>
+              <span className="text-sm font-medium text-gray-500 dark:text-gray-400">{post.views || 0}</span>
+               {/* 滑鼠懸停時顯示的提示文字 */}
+               <span className="invisible group-hover:visible absolute bottom-full mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded whitespace-nowrap">查看次數</span>
+            </div>
           </div>
         </motion.article>
+        
 
         {/* 評論區 */}
         <motion.section

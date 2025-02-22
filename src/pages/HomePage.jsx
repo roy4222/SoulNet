@@ -370,13 +370,15 @@ function HomePage() {
                             e.stopPropagation();
                             handleLike(post);
                           }}
-                          className="flex items-center gap-2 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-all duration-200 group"
+                          className="flex items-center gap-2 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-all duration-200 group relative" 
                         >
                           {post.likes?.includes(currentUser?.uid) 
                             ? <FavoriteRoundedIcon className="w-6 h-6 text-red-500" />
                             : <FavoriteBorderRoundedIcon className="w-6 h-6 group-hover:text-red-500" />
                           }
                           <span className="text-sm font-medium">{post.likes?.length || 0}</span>
+                          {/* 滑鼠懸停時顯示的提示文字 */}
+                          <span className="invisible group-hover:visible absolute bottom-full mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded whitespace-nowrap">點讚</span>
                         </button>
 
                         {/* 評論按鈕 */}
@@ -386,12 +388,14 @@ function HomePage() {
                             e.stopPropagation();
                             navigate(`/post/${post.id}#comments`);
                           }}
-                          className="flex items-center gap-2 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-all duration-200 group"
+                          className="flex items-center gap-2 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-all duration-200 group relative"
                         >
                           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" className="group-hover:text-blue-500">
                             <path fill="currentColor" d="M12 2A10 10 0 0 0 2 12a9.9 9.9 0 0 0 2.26 6.33l-2 2a1 1 0 0 0-.21 1.09A1 1 0 0 0 3 22h9a10 10 0 0 0 0-20m0 18H5.41l.93-.93a1 1 0 0 0 0-1.41A8 8 0 1 1 12 20"/>
                           </svg>
                           <span className="text-sm font-medium">{post.comments?.length || 0}</span>
+                           {/* 滑鼠懸停時顯示的提示文字 */}
+                           <span className="invisible group-hover:visible absolute bottom-full mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded whitespace-nowrap">評論</span>
                         </button>
 
                         {/* 轉發按鈕 */}
@@ -401,7 +405,7 @@ function HomePage() {
                             e.stopPropagation();
                             handleRepost(post);
                           }}
-                          className="flex items-center gap-2 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-all duration-200 group"
+                          className="flex items-center gap-2 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-all duration-200 group relative"
                         >
                           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 21 21" className="group-hover:text-green-500">
                             <g fill="none" fillRule="evenodd" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
@@ -411,6 +415,8 @@ function HomePage() {
                             </g>
                           </svg>
                           <span className="text-sm font-medium">{post.reposts?.length || 0}</span>
+                          {/* 滑鼠懸停時顯示的提示文字 */}
+                          <span className="invisible group-hover:visible absolute bottom-full mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded whitespace-nowrap">轉發</span>
                         </button>
 
                         {/* 分享按鈕 */}
@@ -420,13 +426,27 @@ function HomePage() {
                             e.stopPropagation();
                             handleShare(post);
                           }}
-                          className="flex items-center gap-2 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-all duration-200 group"
+                          className="flex items-center gap-2 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-all duration-200 group relative"
                         >
                           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" className="group-hover:text-blue-500">
                             <path fill="currentColor" d="M13 14h-2a9 9 0 0 0-7.968 4.81A10 10 0 0 1 3 18C3 12.477 7.477 8 13 8V3l10 8l-10 8z"/>
                           </svg>
                           <span className="text-sm font-medium">{post.shares || 0}</span>
+                          {/* 滑鼠懸停時顯示的提示文字 */}
+                          <span className="invisible group-hover:visible absolute bottom-full mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded whitespace-nowrap">分享</span>
                         </button>
+
+                        {/* 觀看次數 */}
+                        <div className="flex items-center gap-2 p-2 group relative">
+                          {/* 觀看次數圖標 */}
+                          <svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 24 24" className="text-gray-500 dark:text-gray-400 w-5 h-5">
+                            <path fill="none" stroke="currentColor" stroke-width="2" d="M16 5a4 4 0 1 1-8 0a4 4 0 0 1 8 0Zm-1 18v-6h3v-2c0-3.34-2.76-5.97-6-6c-3.21.03-6 2.66-6 6v2h3v6m-5.5 0h17z"/>
+                          </svg>
+                          {/* 觀看次數數值 */}
+                          <span className="text-sm font-medium text-gray-500 dark:text-gray-400">{post.views || 0}</span>
+                          {/* 滑鼠懸停時顯示的提示文字 */}
+                          <span className="invisible group-hover:visible absolute bottom-full mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded whitespace-nowrap">觀看次數</span>
+                        </div>
                       </div>
                     </motion.article>
                   </Link>
