@@ -227,7 +227,10 @@ function HomePage() {
                 categories.map(category => (
                   <button
                     key={category.id}
-                    onClick={() => setSelectedCategory(category.id)}
+                    onClick={() => {
+                      setSelectedCategory(category.id);
+                      scrollToTop();
+                    }}
                     className={`px-4 py-2 rounded-lg text-left transition-all whitespace-nowrap lg:whitespace-normal flex-shrink-0 lg:flex-shrink ${
                       selectedCategory === category.id
                         ? 'bg-blue-500 text-white'
