@@ -332,23 +332,20 @@ function HomePage() {
 
                       {/* 文章圖片 */}
                       {post.imageUrl && (
-                        <div className="mb-4 rounded-lg overflow-hidden transition-shadow duration-300">
-                          <div className="aspect-w-4 aspect-h-3 max-w-2xl mx-auto">
-                            <img 
-                              src={post.imageUrl} 
-                              alt={post.title}
-                              className="w-full h-full object-cover transform hover:scale-[1.02] transition-transform duration-300 rounded-lg cursor-pointer"
-                              onClick={() => {
-                                setSelectedImage(post.imageUrl);
-                                setIsImageModalOpen(true);
-                              }}
-                              onError={(e) => {
-                                console.error('圖片載入失敗:', post.imageUrl);
-                                e.target.src = '/placeholder.png';
-                                e.target.onerror = null;
-                              }}
-                            />
-                          </div>
+                        <div 
+                          className="mb-4 rounded-lg overflow-hidden transition-shadow duration-300 cursor-zoom-in"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setSelectedImage(post.imageUrl);
+                            setIsImageModalOpen(true);
+                          }}
+                        >
+                          <img
+                            src={post.imageUrl}
+                            alt="文章圖片"
+                            className="w-full h-auto object-cover"
+                          />
                         </div>
                       )}
 
@@ -438,20 +435,18 @@ function HomePage() {
         </div>
       </div>
       {/* 圖片放大 Modal */}
-      {isImageModalOpen && selectedImage && (
+      {isImageModalOpen && (
         <div 
-          className="fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center cursor-pointer"
-          onClick={() => {
-            setIsImageModalOpen(false);
-            setSelectedImage(null);
-          }}
+          className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50"
+          onClick={() => setIsImageModalOpen(false)}
         >
-          <img 
-            src={selectedImage} 
-            alt="放大圖片"
-            className="max-h-[90vh] max-w-[90vw] object-contain"
-            onClick={(e) => e.stopPropagation()} // 防止點擊圖片時關閉 modal
-          />
+          <div className="max-w-4xl w-full max-h-[90vh] p-4">
+            <img
+              src={selectedImage}
+              alt="放大圖片"
+              className="w-full h-auto object-contain"
+            />
+          </div>
         </div>
       )}
       {/* 回到頂部按鈕 */}
