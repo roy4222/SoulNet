@@ -16,6 +16,8 @@ function HomePage() {
   const [posts, setPosts] = useState([]); // 文章列表，初始化為空數組
   const [isLoadingPosts, setIsLoadingPosts] = useState(true); // 文章加載狀態
   const [expandedPosts, setExpandedPosts] = useState({}); // 追蹤文章展開狀態
+  const [isImageModalOpen, setIsImageModalOpen] = useState(false); // 控制圖片 modal 的開關狀態
+  const [selectedImage, setSelectedImage] = useState(null); // 當前選中的圖片 URL
 
   // 切換文章展開狀態的函數
   const togglePostExpansion = (postId) => {
@@ -273,7 +275,11 @@ function HomePage() {
                           <img 
                             src={post.imageUrl} 
                             alt={post.title}
-                            className="w-full h-full object-cover transform hover:scale-[1.02] transition-transform duration-300 rounded-lg"
+                            className="w-full h-full object-cover transform hover:scale-[1.02] transition-transform duration-300 rounded-lg cursor-pointer"
+                            onClick={() => {
+                              setSelectedImage(post.imageUrl);
+                              setIsImageModalOpen(true);
+                            }}
                             onError={(e) => {
                               console.error('圖片載入失敗:', post.imageUrl);
                               e.target.src = '/placeholder.png';
@@ -314,6 +320,23 @@ function HomePage() {
           </div>
         </div>
       </div>
+      {/* 圖片放大 Modal */}
+      {isImageModalOpen && selectedImage && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center cursor-pointer"
+          onClick={() => {
+            setIsImageModalOpen(false);
+            setSelectedImage(null);
+          }}
+        >
+          <img 
+            src={selectedImage} 
+            alt="放大圖片"
+            className="max-h-[90vh] max-w-[90vw] object-contain"
+            onClick={(e) => e.stopPropagation()} // 防止點擊圖片時關閉 modal
+          />
+        </div>
+      )}
       {/* 回到頂部按鈕 */}
       <motion.div
         // 初始狀態：完全透明
