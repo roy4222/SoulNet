@@ -5,6 +5,10 @@ import { collection, getDocs } from 'firebase/firestore';
 import { Fab } from '@mui/material';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import { Link, useNavigate } from 'react-router-dom';
+import FavoriteRoundedIcon from '@mui/icons-material/FavoriteRounded';
+import FavoriteBorderRoundedIcon from '@mui/icons-material/FavoriteBorderRounded';
+import { doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { useAuth } from '../contexts/AuthContext';
 
 // 定義HomePage組件
 function HomePage() {
@@ -20,6 +24,7 @@ function HomePage() {
   const [isImageModalOpen, setIsImageModalOpen] = useState(false); // 控制圖片 modal 的開關狀態
   const [selectedImage, setSelectedImage] = useState(null); // 當前選中的圖片 URL
   const navigate = useNavigate();
+  const { currentUser } = useAuth();
 
   // 切換文章展開狀態的函數
   const togglePostExpansion = (postId) => {
@@ -136,6 +141,51 @@ function HomePage() {
       top: 0,
       behavior: 'smooth'
     });
+  };
+
+  const handleLike = async (post) => {
+    if (!currentUser) {
+      navigate('/sign');
+      return;
+    }
+
+    const postRef = doc(db, 'posts', post.id);
+    if (post.likes?.includes(currentUser?.uid)) {
+      await updateDoc(postRef, {
+        likes: arrayRemove(currentUser?.uid)
+      });
+    } else {
+      await updateDoc(postRef, {
+        likes: arrayUnion(currentUser?.uid)
+      });
+    }
+  };
+
+  const handleRepost = async (post) => {
+    if (!currentUser) {
+      navigate('/sign');
+      return;
+    }
+
+    const postRef = doc(db, 'posts', post.id);
+    if (post.reposts?.includes(currentUser?.uid)) {
+      await updateDoc(postRef, {
+        reposts: arrayRemove(currentUser?.uid)
+      });
+    } else {
+      await updateDoc(postRef, {
+        reposts: arrayUnion(currentUser?.uid)
+      });
+    }
+  };
+
+  const handleShare = async (post) => {
+    try {
+      await navigator.clipboard.writeText(`${window.location.origin}/post/${post.id}`);
+      alert('連結已複製到剪貼簿！');
+    } catch (error) {
+      console.error('Error copying to clipboard:', error);
+    }
   };
 
   return (
@@ -303,37 +353,74 @@ function HomePage() {
                         </span>
                       </div>
 
-                     
                       {/* 互動按鈕 */}
                       <div 
                         className="flex items-center gap-4 text-gray-500 dark:text-gray-400"
                         onClick={e => e.preventDefault()}
                       >
+                        {/* 點讚按鈕 */}
                         <button 
-                          className="flex items-center gap-1 hover:text-blue-500 transition-colors"
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
-                            // 這裡添加點讚邏輯
+                            handleLike(post);
                           }}
+                          className="flex items-center gap-2 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-all duration-200 group"
                         >
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                          </svg>
-                          <span>讚</span>
+                          {post.likes?.includes(currentUser?.uid) 
+                            ? <FavoriteRoundedIcon className="w-6 h-6 text-red-500" />
+                            : <FavoriteBorderRoundedIcon className="w-6 h-6 group-hover:text-red-500" />
+                          }
+                          <span className="text-sm font-medium">{post.likes?.length || 0}</span>
                         </button>
+
+                        {/* 評論按鈕 */}
                         <button 
-                          className="flex items-center gap-1 hover:text-blue-500 transition-colors"
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
                             navigate(`/post/${post.id}#comments`);
                           }}
+                          className="flex items-center gap-2 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-all duration-200 group"
                         >
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" className="group-hover:text-blue-500">
+                            <path fill="currentColor" d="M12 2A10 10 0 0 0 2 12a9.9 9.9 0 0 0 2.26 6.33l-2 2a1 1 0 0 0-.21 1.09A1 1 0 0 0 3 22h9a10 10 0 0 0 0-20m0 18H5.41l.93-.93a1 1 0 0 0 0-1.41A8 8 0 1 1 12 20"/>
                           </svg>
-                          <span>留言</span>
+                          <span className="text-sm font-medium">{post.comments?.length || 0}</span>
+                        </button>
+
+                        {/* 轉發按鈕 */}
+                        <button 
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleRepost(post);
+                          }}
+                          className="flex items-center gap-2 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-all duration-200 group"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 21 21" className="group-hover:text-green-500">
+                            <g fill="none" fillRule="evenodd" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="m13.5 13.5l3 3l3-3"/>
+                              <path d="M9.5 4.5h3a4 4 0 0 1 4 4v8m-9-9l-3-3l-3 3"/>
+                              <path d="M11.5 16.5h-3a4 4 0 0 1-4-4v-8"/>
+                            </g>
+                          </svg>
+                          <span className="text-sm font-medium">{post.reposts?.length || 0}</span>
+                        </button>
+
+                        {/* 分享按鈕 */}
+                        <button 
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleShare(post);
+                          }}
+                          className="flex items-center gap-2 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-all duration-200 group"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" className="group-hover:text-blue-500">
+                            <path fill="currentColor" d="M13 14h-2a9 9 0 0 0-7.968 4.81A10 10 0 0 1 3 18C3 12.477 7.477 8 13 8V3l10 8l-10 8z"/>
+                          </svg>
+                          <span className="text-sm font-medium">{post.shares || 0}</span>
                         </button>
                       </div>
                     </motion.article>
