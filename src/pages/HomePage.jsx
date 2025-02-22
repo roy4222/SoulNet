@@ -310,11 +310,11 @@ function HomePage() {
                       {/* 文章內容區塊 */}
                       <div className="mb-4">
                         {/* 顯示文章內容，根據展開狀態決定是否顯示全文 */}
-                        <p className="text-gray-800 dark:text-gray-200">
+                        <div className="text-gray-800 dark:text-gray-200 whitespace-pre-wrap">
                           {/* 如果文章已展開，顯示全文；否則只顯示前100個字符並加上省略號 */}
-                          {expandedPosts[post.id] ? post.content : `${post.content.slice(0, 100)}`}
-                        </p>
-                        {/* 當文章內容超過100個字符時，顯示"顯示更多"按鈕 */}
+                          {expandedPosts[post.id] ? post.content : `${post.content.slice(0, 100)}${post.content.length > 100 ? '...' : ''}`}
+                        </div>
+                        {/* 當文章內容超過100個字符時，顯示"顯示更多"或"收起"按鈕 */}
                         {post.content.length > 100 && (
                           <button
                             className="text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 mt-2"
@@ -324,7 +324,6 @@ function HomePage() {
                               togglePostExpansion(post.id); // 切換文章展開狀態
                             }}
                           >
-                            {/* 根據當前展開狀態顯示不同的按鈕文字 */}
                             {expandedPosts[post.id] ? '' : '顯示更多'}
                           </button>
                         )}
