@@ -41,6 +41,48 @@ export default function NewPost() {
     const auth = getAuth();
     const db = getFirestore();
 
+    // 處理拖放事件
+    const handleDragOver = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+    };
+
+    const handleDrop = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        if (loading) return;
+
+        const files = e.dataTransfer.files;
+        if (files && files[0]) {
+            handleImageChange({ target: { files: [files[0]] } });
+        }
+    };
+
+    // 處理貼上事件
+    const handlePaste = (e) => {
+        if (loading) return;
+
+        const items = e.clipboardData?.items;
+        if (!items) return;
+
+        for (const item of items) {
+            if (item.type.startsWith('image/')) {
+                const file = item.getAsFile();
+                handleImageChange({ target: { files: [file] } });
+                break;
+            }
+        }
+    };
+
+    // 在組件掛載時添加貼上事件監聽器
+    useEffect(() => {
+        document.addEventListener('paste', handlePaste);
+        return () => {
+            document.removeEventListener('paste', handlePaste);
+        };
+    }, [loading]);
+
     // 處理圖片選擇
     const handleImageChange = (e) => {
         const file = e.target.files[0];
@@ -185,7 +227,13 @@ export default function NewPost() {
                     </label>
                     <div className="flex items-center justify-center w-full">
                       {/* 圖片上傳標籤，根據是否有預覽圖改變樣式 */}
-                      <label htmlFor="image" className={`flex flex-col items-center justify-center w-full h-64 border-2 border-gray-300 dark:border-gray-600 border-dashed rounded-lg cursor-pointer ${imagePreview ? 'bg-cover bg-center' : 'bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700'}`} style={imagePreview ? { backgroundImage: `url(${imagePreview})` } : {}}>
+                      <label 
+                        htmlFor="image" 
+                        className={`flex flex-col items-center justify-center w-full h-64 border-2 border-gray-300 dark:border-gray-600 border-dashed rounded-lg cursor-pointer ${imagePreview ? 'bg-cover bg-center' : 'bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700'}`} 
+                        style={imagePreview ? { backgroundImage: `url(${imagePreview})` } : {}}
+                        onDragOver={handleDragOver}
+                        onDrop={handleDrop}
+                      >
                         {/* 當沒有預覽圖時顯示上傳提示 */}
                         {!imagePreview && (
                           <div className="flex flex-col items-center justify-center pt-5 pb-6">

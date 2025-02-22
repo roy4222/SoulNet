@@ -130,7 +130,7 @@ function HomePage() {
 
   // 回到頂部函數
   const scrollToTop = () => {
-    window.scrollTo({
+    window.scrollTo({  //是瀏覽器內建的滾動方法，用來控制頁面的滾動位置
       top: 0,
       behavior: 'smooth'
     });
