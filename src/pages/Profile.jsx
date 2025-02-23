@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { db, auth, storage } from '../utils/firebase';
-import { doc, getDoc, updateDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, setDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { updateProfile } from 'firebase/auth';
 import { Avatar, Button, TextField, IconButton, CircularProgress, Card, CardContent, Typography, Grid, Divider, Tabs, Tab } from '@mui/material';
@@ -14,6 +14,8 @@ import ImageIcon from '@mui/icons-material/Image';
 import RepeatIcon from '@mui/icons-material/Repeat';
 import { formatDistanceToNow } from 'date-fns';
 import { zhTW } from 'date-fns/locale';
+import { PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
+import { r2Client } from '../utils/firebase';
 
 // 預設頭像
 const DEFAULT_AVATAR = 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSCvBNjFR_6BVhW3lFNwF0oEk2N8JXjeiaSqg&s';
@@ -29,6 +31,7 @@ function Profile() {
     const [isEditing, setIsEditing] = useState(false);  // 控制是否處於編輯模式
     const [isLoading, setIsLoading] = useState(true);  // 控制載入狀態
     const [error, setError] = useState('');  // 儲存錯誤訊息
+    const [imagePreview, setImagePreview] = useState(null);  // 儲存頭像預覽 URL
     const [editForm, setEditForm] = useState({  // 儲存編輯表單的資料
         displayName: '',
         bio: '',
@@ -36,10 +39,219 @@ function Profile() {
     });
     const [activeTab, setActiveTab] = useState(0);  // 儲存目前的分頁索引
 
+    // 處理表單提交
+    const handleSubmit = async () => {
+        try {
+            setIsLoading(true);
+            setError('');
+            const currentUser = auth.currentUser;
+            
+            if (!currentUser) {
+                throw new Error('用戶未登入');
+            }
+
+            // 檢查必要的環境變數
+            const endpoint = import.meta.env.VITE_R2_ENDPOINT;
+            const bucket = import.meta.env.VITE_R2_BUCKET;
+            
+            if (!endpoint) {
+                throw new Error('未設定 R2 Endpoint (VITE_R2_ENDPOINT)');
+            }
+            
+            if (!bucket) {
+                throw new Error('未設定 R2 Bucket (VITE_R2_BUCKET)');
+            }
+            
+            console.log('開始更新用戶資料...');
+
+            // 如果有新頭像，先上傳到 Cloudflare R2
+            let avatarUrl = user?.photoURL || DEFAULT_AVATAR;
+            if (editForm.avatar) {
+                console.log('開始上傳頭像到 R2...');
+                try {
+                    const fileExtension = editForm.avatar.name.split('.').pop();
+                    const timestamp = Date.now();
+                    const randomString = Math.random().toString(36).substring(2, 8);
+                    const fileName = `avatars/${currentUser.uid}_${timestamp}_${randomString}.${fileExtension}`;
+                    
+                    // 將File轉換為ArrayBuffer
+                    const buffer = await editForm.avatar.arrayBuffer();
+                    
+                    console.log('準備上傳到 R2...', {
+                        bucket: bucket,
+                        fileName: fileName,
+                        contentType: editForm.avatar.type
+                    });
+                    
+                    // 上傳到 R2
+                    await r2Client.send(new PutObjectCommand({
+                        Bucket: bucket,
+                        Key: fileName,
+                        Body: buffer,
+                        ContentType: editForm.avatar.type,
+                        CacheControl: 'no-cache',
+                    }));
+                    
+                    console.log('頭像上傳成功');
+                    // 構建 R2 URL
+                    const publicUrl = `https://${endpoint}/${fileName}`;
+                    avatarUrl = publicUrl;
+                    console.log('取得頭像 URL:', avatarUrl);
+
+                    // 刪除舊的頭像
+                    if (user?.photoURL && user.photoURL !== DEFAULT_AVATAR) {
+                        try {
+                            const oldFileName = user.photoURL.split('/').pop();
+                            if (oldFileName.startsWith('avatars/')) {
+                                await r2Client.send(new DeleteObjectCommand({
+                                    Bucket: bucket,
+                                    Key: oldFileName
+                                }));
+                                console.log('舊頭像刪除成功');
+                            }
+                        } catch (err) {
+                            console.error('刪除舊頭像時發生錯誤:', err);
+                            // 不中斷流程，繼續執行
+                        }
+                    }
+                } catch (err) {
+                    console.error('上傳頭像時發生錯誤:', err);
+                    throw new Error('上傳頭像失敗: ' + err.message);
+                }
+            }
+
+            // 更新 Firebase Auth 資料
+            console.log('更新 Auth 資料...');
+            try {
+                await updateProfile(currentUser, {
+                    displayName: editForm.displayName,
+                    photoURL: avatarUrl
+                });
+                console.log('Auth 資料更新成功');
+
+                // 重新載入用戶資料
+                await currentUser.reload();
+                const freshUser = auth.currentUser;
+                
+                // 確保 localStorage 同步更新
+                const userData = {
+                    uid: freshUser.uid,
+                    email: freshUser.email,
+                    displayName: freshUser.displayName,
+                    photoURL: freshUser.photoURL
+                };
+                localStorage.setItem('social:user', JSON.stringify(userData));
+                
+            } catch (err) {
+                console.error('更新 Auth 資料時發生錯誤:', err);
+                throw new Error('更新用戶資料失敗: ' + err.message);
+            }
+
+            // 更新 Firestore 資料
+            console.log('更新 Firestore 資料...');
+            try {
+                await updateDoc(doc(db, 'users', currentUser.uid), {
+                    displayName: editForm.displayName,
+                    bio: editForm.bio,
+                    photoURL: avatarUrl,
+                    updatedAt: new Date()
+                });
+                console.log('Firestore 資料更新成功');
+            } catch (err) {
+                console.error('更新 Firestore 資料時發生錯誤:', err);
+                throw new Error('更新用戶資料失敗: ' + err.message);
+            }
+
+            // 更新本地狀態
+            setUser(prev => ({
+                ...prev,
+                displayName: editForm.displayName,
+                photoURL: avatarUrl,
+                bio: editForm.bio
+            }));
+
+            // 清除預覽和編輯狀態
+            if (imagePreview) {
+                URL.revokeObjectURL(imagePreview);
+                setImagePreview(null);
+            }
+            setIsEditing(false);
+            setIsLoading(false);
+
+            // 觸發 auth 狀態變化
+            const authEvent = new CustomEvent('auth-state-changed', {
+                detail: { user: auth.currentUser }
+            });
+            window.dispatchEvent(authEvent);
+
+            console.log('用戶資料更新完成');
+        } catch (err) {
+            console.error('更新個人資料時發生錯誤:', err);
+            setError(err.message || '更新資料時發生錯誤');
+            setIsLoading(false);
+        }
+    };
+
+    // 處理頭像上傳
+    const handleAvatarChange = async (event) => {
+        const file = event.target.files[0];
+        if (file) {
+            try {
+                // 檢查檔案大小 (最大 5MB)
+                if (file.size > 5 * 1024 * 1024) {
+                    throw new Error('檔案大小不能超過 5MB');
+                }
+                
+                // 檢查檔案類型
+                if (!file.type.startsWith('image/')) {
+                    throw new Error('只能上傳圖片檔案');
+                }
+                
+                console.log('選擇的檔案:', file.name, '大小:', file.size, '類型:', file.type);
+                
+                // 創建預覽 URL
+                const previewUrl = URL.createObjectURL(file);
+                setImagePreview(previewUrl);
+                
+                setEditForm(prev => ({ ...prev, avatar: file }));
+            } catch (err) {
+                console.error('處理頭像時發生錯誤:', err);
+                setError(err.message);
+            }
+        }
+    };
+
+    // 處理取消編輯
+    const handleCancel = () => {
+        setIsEditing(false);
+        if (imagePreview) {
+            URL.revokeObjectURL(imagePreview);
+            setImagePreview(null);
+        }
+        setEditForm(prev => ({
+            ...prev,
+            displayName: user?.displayName || '',
+            bio: user?.bio || '',
+            avatar: null
+        }));
+    };
+
+    // 清理預覽 URL
+    useEffect(() => {
+        return () => {
+            if (imagePreview) {
+                URL.revokeObjectURL(imagePreview);
+            }
+        };
+    }, [imagePreview]);
+
     // 使用 useEffect 鉤子在組件載入時獲取用戶資料
     useEffect(() => {
         const loadUserData = async () => {
             try {
+                setIsLoading(true);
+                setError('');
+                
                 // 獲取當前登入的用戶
                 const currentUser = auth.currentUser;
                 if (!currentUser) {
@@ -50,14 +262,37 @@ function Profile() {
                 // 從 Firestore 獲取用戶資料
                 const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
                 if (userDoc.exists()) {
-                    // 設置用戶資料和編輯表單的初始值
-                    setUser({
+                    const userData = {
                         ...currentUser,
                         ...userDoc.data()
-                    });
+                    };
+                    // 確保有預設值
+                    userData.photoURL = userData.photoURL || DEFAULT_AVATAR;
+                    userData.displayName = userData.displayName || '未設定名稱';
+                    userData.bio = userData.bio || '';
+                    
+                    setUser(userData);
                     setEditForm({
-                        displayName: currentUser.displayName || '',
-                        bio: userDoc.data().bio || '',
+                        displayName: userData.displayName,
+                        bio: userData.bio || '',
+                        avatar: null
+                    });
+                } else {
+                    // 如果用戶文檔不存在，創建一個新的
+                    const newUserData = {
+                        uid: currentUser.uid,
+                        email: currentUser.email,
+                        displayName: currentUser.displayName || '未設定名稱',
+                        photoURL: currentUser.photoURL || DEFAULT_AVATAR,
+                        bio: '',
+                        createdAt: new Date(),
+                        updatedAt: new Date()
+                    };
+                    await setDoc(doc(db, 'users', currentUser.uid), newUserData);
+                    setUser(newUserData);
+                    setEditForm({
+                        displayName: newUserData.displayName,
+                        bio: '',
                         avatar: null
                     });
                 }
@@ -105,59 +340,6 @@ function Profile() {
         loadUserData();
     }, [navigate]);
 
-    // 處理頭像上傳
-    const handleAvatarChange = async (event) => {
-        const file = event.target.files[0];
-        if (file) {
-            setEditForm(prev => ({ ...prev, avatar: file }));
-        }
-    };
-
-    // 處理表單提交
-    const handleSubmit = async () => {
-        try {
-            setIsLoading(true);
-            const currentUser = auth.currentUser;
-
-            // 如果有新頭像，先上傳到 Firebase Storage
-            let avatarUrl = user.photoURL;
-            if (editForm.avatar) {
-                const avatarRef = ref(storage, `avatars/${currentUser.uid}`);
-                await uploadBytes(avatarRef, editForm.avatar);
-                avatarUrl = await getDownloadURL(avatarRef);
-            }
-
-            // 更新 Firebase Auth 資料
-            await updateProfile(currentUser, {
-                displayName: editForm.displayName,
-                photoURL: avatarUrl
-            });
-
-            // 更新 Firestore 資料
-            await updateDoc(doc(db, 'users', currentUser.uid), {
-                displayName: editForm.displayName,
-                bio: editForm.bio,
-                photoURL: avatarUrl,
-                updatedAt: new Date()
-            });
-
-            // 更新本地狀態
-            setUser(prev => ({
-                ...prev,
-                displayName: editForm.displayName,
-                photoURL: avatarUrl,
-                bio: editForm.bio
-            }));
-
-            setIsEditing(false);
-            setIsLoading(false);
-        } catch (err) {
-            console.error('Error updating profile:', err);
-            setError('更新資料時發生錯誤');
-            setIsLoading(false);
-        }
-    };
-
     // 處理分頁切換
     const handleTabChange = (event, newValue) => {
         setActiveTab(newValue);
@@ -196,7 +378,7 @@ function Profile() {
                         <div className="relative group mb-6 md:mb-0">
                             <div className="rounded-full overflow-hidden shadow-2xl border-4 border-white dark:border-gray-700">
                                 <Avatar
-                                    src={user?.photoURL || DEFAULT_AVATAR}
+                                    src={isEditing && imagePreview ? imagePreview : (user?.photoURL || DEFAULT_AVATAR)}
                                     alt={user?.displayName}
                                     sx={{ 
                                         width: 180, 
@@ -292,7 +474,7 @@ function Profile() {
                                         <Button
                                             variant="outlined"
                                             startIcon={<CancelIcon />}
-                                            onClick={() => setIsEditing(false)}
+                                            onClick={handleCancel}
                                             disabled={isLoading}
                                             sx={{
                                                 borderColor: 'rgb(209, 213, 219)',

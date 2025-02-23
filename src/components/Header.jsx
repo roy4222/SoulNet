@@ -60,6 +60,22 @@ export default function Header() {
             }
         });
 
+        // 監聽自定義的 auth 狀態變化事件
+        const handleAuthChange = (event) => {
+            const user = event.detail.user;
+            if (user) {
+                const userData = {
+                    uid: user.uid,
+                    email: user.email,
+                    displayName: user.displayName,
+                    photoURL: user.photoURL || DEFAULT_AVATAR
+                };
+                localStorage.setItem(USER_KEY, JSON.stringify(userData));
+                setUser(userData);
+            }
+        };
+        window.addEventListener('auth-state-changed', handleAuthChange);
+
         // 點擊外部關閉下拉選單和漢堡選單
         const handleClickOutside = (event) => {
             // 如果點擊的不是下拉菜單內部，則關閉下拉菜單
@@ -78,6 +94,7 @@ export default function Header() {
         // 清理函數
         return () => {
             unsubscribe(); // 取消 Firebase 身份驗證監聽器
+            window.removeEventListener('auth-state-changed', handleAuthChange);
             document.removeEventListener('mousedown', handleClickOutside); // 移除點擊事件監聽器
         };
     }, []); // 空依賴數組表示這個效果只在組件掛載和卸載時運行
@@ -191,7 +208,7 @@ export default function Header() {
                                         <img 
                                             src={user.photoURL || DEFAULT_AVATAR}
                                             alt="用戶頭像" 
-                                            className="w-10 h-10 rounded-full border-2 border-blue-500 dark:border-blue-600 hover:border-blue-600 dark:hover:border-blue-700 transition-colors duration-200"
+                                            className="w-10 h-10 rounded-full border-2 border-blue-500 dark:border-blue-600 hover:border-blue-600 dark:hover:border-blue-700 transition-colors duration-200 object-cover"
                                         />
                                     </button>
 
