@@ -7,7 +7,6 @@ import { doc, getDoc, updateDoc, setDoc, collection, query, where, getDocs } fro
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { updateProfile } from 'firebase/auth';
 import { Avatar, Button, TextField, IconButton, CircularProgress, Card, CardContent, Typography, Grid, Divider, Tabs, Tab } from '@mui/material';
-import EditIcon from '@mui/icons-material/Edit';
 import SaveIcon from '@mui/icons-material/Save';
 import CancelIcon from '@mui/icons-material/Cancel';
 import ImageIcon from '@mui/icons-material/Image';
@@ -16,7 +15,6 @@ import { formatDistanceToNow } from 'date-fns';
 import { zhTW } from 'date-fns/locale';
 import { PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { r2Client } from '../utils/firebase';
-import { useTheme } from '../contexts/themeContext';
 
 // 預設頭像
 const DEFAULT_AVATAR = 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSCvBNjFR_6BVhW3lFNwF0oEk2N8JXjeiaSqg&s';
@@ -39,7 +37,6 @@ function Profile() {
         avatar: null
     });
     const [activeTab, setActiveTab] = useState(0);  // 儲存目前的分頁索引
-    const { isDarkMode } = useTheme();
 
     // 處理表單提交
     const handleSubmit = async () => {
@@ -392,8 +389,10 @@ function Profile() {
                                     }}
                                 />
                             </div>
+                            {/* 編輯模式下顯示頭像上傳選項 */}
                             {isEditing && (
                                 <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-full">
+                                    {/* 隱藏的文件輸入框 */}
                                     <input
                                         type="file"
                                         accept="image/*"
@@ -401,6 +400,7 @@ function Profile() {
                                         className="hidden"
                                         onChange={handleAvatarChange}
                                     />
+                                    {/* 自定義的上傳按鈕 */}
                                     <label htmlFor="avatar-upload" className="cursor-pointer transform transition-transform duration-200 hover:scale-110">
                                         <IconButton 
                                             component="span" 
@@ -421,102 +421,47 @@ function Profile() {
                         <div className="flex-1 w-full max-w-xl">
                             {isEditing ? (
                                 <div className="space-y-6">
-                                    <TextField
-                                        fullWidth
-                                        label="顯示名稱"
-                                        variant="outlined"
+                                    <input
+                                        type="text"
+                                        placeholder="顯示名稱"
                                         value={editForm.displayName}
                                         onChange={(e) => setEditForm(prev => ({ ...prev, displayName: e.target.value }))}
-                                        sx={{
-                                            '& .MuiOutlinedInput-root': {
-                                                backgroundColor: isDarkMode ? 'rgba(55, 65, 81, 0.1)' : 'white',
-                                                borderRadius: '12px',
-                                                '&:hover fieldset': {
-                                                    borderColor: 'rgb(59, 130, 246)'
-                                                }
-                                            },
-                                            '& .MuiInputLabel-root': {
-                                                color: isDarkMode ? 'rgb(209, 213, 219)' : 'inherit'
-                                            },
-                                            '& .MuiOutlinedInput-input': {
-                                                color: isDarkMode ? 'white' : 'inherit'
-                                            },
-                                            '& .MuiOutlinedInput-notchedOutline': {
-                                                borderColor: isDarkMode ? 'rgba(209, 213, 219, 0.3)' : 'inherit'
-                                            }
-                                        }}
+                                        className="w-full px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm hover:border-blue-500 dark:hover:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 text-gray-900 dark:text-gray-100 placeholder-gray-600 dark:placeholder-gray-400"
                                     />
-                                    <TextField
-                                        fullWidth
-                                        multiline
-                                        rows={4}
-                                        label="個人簡介"
-                                        variant="outlined"
+                                    <textarea
+                                        rows="4"
+                                        placeholder="個人簡介"
                                         value={editForm.bio}
                                         onChange={(e) => setEditForm(prev => ({ ...prev, bio: e.target.value }))}
-                                        sx={{
-                                            '& .MuiOutlinedInput-root': {
-                                                backgroundColor: isDarkMode ? 'rgba(55, 65, 81, 0.1)' : 'white',
-                                                borderRadius: '12px',
-                                                '&:hover fieldset': {
-                                                    borderColor: 'rgb(59, 130, 246)'
-                                                }
-                                            },
-                                            '& .MuiInputLabel-root': {
-                                                color: isDarkMode ? 'rgb(209, 213, 219)' : 'inherit'
-                                            },
-                                            '& .MuiOutlinedInput-input': {
-                                                color: isDarkMode ? 'white' : 'inherit'
-                                            },
-                                            '& .MuiOutlinedInput-notchedOutline': {
-                                                borderColor: isDarkMode ? 'rgba(209, 213, 219, 0.3)' : 'inherit'
-                                            }
-                                        }}
-                                    />
-                                    <div className="flex space-x-3 justify-end">
+                                        className="w-full px-4 py-2 mt-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm hover:border-blue-500 dark:hover:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 text-gray-900 dark:text-gray-100 placeholder-gray-600 dark:placeholder-gray-400 resize-none"
+                                    ></textarea>
+                                    <div className="flex space-x-4 justify-end mt-6">
                                         <Button
                                             variant="contained"
                                             startIcon={<SaveIcon />}
                                             onClick={handleSubmit}
                                             disabled={isLoading}
-                                            sx={{
-                                                backgroundColor: isDarkMode ? 'rgb(37, 99, 235)' : 'rgb(59, 130, 246)',
-                                                '&:hover': {
-                                                    backgroundColor: isDarkMode ? 'rgb(29, 78, 216)' : 'rgb(37, 99, 235)'
-                                                },
-                                                color: 'white',
-                                                borderRadius: '10px',
-                                                textTransform: 'none',
-                                                padding: '8px 24px'
-                                            }}
+                                            className="!bg-gradient-to-r from-blue-500 to-blue-600 hover:!from-blue-600 hover:!to-blue-700 !text-white !rounded-full !px-6 !py-2 !text-sm !font-medium !shadow-lg !transition-all !duration-300 !ease-in-out !transform hover:!scale-105"
                                         >
-                                            儲存
+                                            儲存變更
                                         </Button>
                                         <Button
                                             variant="outlined"
                                             startIcon={<CancelIcon />}
                                             onClick={handleCancel}
                                             disabled={isLoading}
-                                            sx={{
-                                                borderColor: isDarkMode ? 'rgba(209, 213, 219, 0.5)' : 'rgb(209, 213, 219)',
-                                                color: isDarkMode ? 'rgb(209, 213, 219)' : 'rgb(55, 65, 81)',
-                                                '&:hover': {
-                                                    borderColor: isDarkMode ? 'rgb(209, 213, 219)' : 'rgb(156, 163, 175)',
-                                                    backgroundColor: isDarkMode ? 'rgba(209, 213, 219, 0.1)' : 'rgba(243, 244, 246, 0.1)'
-                                                },
-                                                borderRadius: '10px',
-                                                textTransform: 'none',
-                                                padding: '8px 24px'
-                                            }}
+                                            className="!bg-transparent !text-gray-700 !border-2 !border-gray-300 hover:!bg-gray-100 dark:!text-gray-200 dark:!border-gray-600 dark:hover:!bg-gray-700 !rounded-full !px-6 !py-2 !text-sm !font-medium !shadow-md !transition-all !duration-300 !ease-in-out !transform hover:!scale-105"
                                         >
-                                            取消
+                                            取消編輯
                                         </Button>
                                     </div>
                                 </div>
                             ) : (
                                 <div>
+                                    {/* 用戶資訊區塊 */}
                                     <div className="flex items-center justify-between mb-6">
                                         <div>
+                                            {/* 顯示用戶名稱 */}
                                             <Typography 
                                                 variant="h4" 
                                                 component="h1" 
@@ -525,6 +470,7 @@ function Profile() {
                                             >
                                                 {user?.displayName || '未設定名稱'}
                                             </Typography>
+                                            {/* 顯示用戶電子郵件 */}
                                             <Typography 
                                                 variant="body1" 
                                                 className="text-gray-500 dark:text-gray-400"
@@ -532,18 +478,32 @@ function Profile() {
                                                 {user?.email}
                                             </Typography>
                                         </div>
+                                        {/* 編輯按鈕 */}
                                         <IconButton 
-                                            onClick={() => setIsEditing(true)} 
+                                            onClick={() => setIsEditing(true)}
                                             className="bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600"
-                                            sx={{
+                                            sx={{ 
                                                 padding: '12px',
                                                 transition: 'all 0.2s ease-in-out',
                                                 '&:hover': { transform: 'scale(1.1)' }
                                             }}
                                         >
-                                            <EditIcon />
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" className="text-gray-900 dark:text-white">
+                                                <g fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2">
+                                                    <path strokeDasharray="20" strokeDashoffset="20" d="M3 21h18">
+                                                        <animate fill="freeze" attributeName="stroke-dashoffset" dur="0.2s" values="20;0"/>
+                                                    </path>
+                                                    <path strokeDasharray="48" strokeDashoffset="48" d="M7 17v-4l10 -10l4 4l-10 10h-4">
+                                                        <animate fill="freeze" attributeName="stroke-dashoffset" begin="0.2s" dur="0.6s" values="48;0"/>
+                                                    </path>
+                                                    <path strokeDasharray="8" strokeDashoffset="8" d="M14 6l4 4">
+                                                        <animate fill="freeze" attributeName="stroke-dashoffset" begin="0.8s" dur="0.2s" values="8;0"/>
+                                                    </path>
+                                                </g>
+                                            </svg>
                                         </IconButton>
                                     </div>
+                                    {/* 用戶簡介區塊 */}
                                     <div className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-6">
                                         <Typography 
                                             variant="body1" 
