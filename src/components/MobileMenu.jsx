@@ -168,7 +168,17 @@ export default function MobileMenu({
 
                             {/* 底部選項：僅在用戶登入時顯示登出按鈕 */}
                             {user && (
-                                <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+                                <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700 space-y-2">
+                                    <Link
+                                        to="/profile"
+                                        onClick={onClose}
+                                        className="w-full flex items-center justify-center space-x-2 px-4 py-2 text-blue-600 dark:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors duration-200"
+                                    >
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                        </svg>
+                                        <span>個人資料</span>
+                                    </Link>
                                     <button
                                         onClick={() => {
                                             handleSignOut();

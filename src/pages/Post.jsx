@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { db } from '../utils/firebase';
-import { doc, getDoc, updateDoc, arrayUnion, arrayRemove, Timestamp } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, arrayUnion, arrayRemove, Timestamp, collection, addDoc } from 'firebase/firestore';
 import { Avatar, IconButton, TextField, Button } from '@mui/material';
 import FavoriteRoundedIcon from '@mui/icons-material/FavoriteRounded';
 import FavoriteBorderRoundedIcon from '@mui/icons-material/FavoriteBorderRounded';
@@ -195,19 +195,45 @@ function Post() {
       // 獲取文章的引用
       const postRef = doc(db, 'posts', id);
       
-      // 更新文章文檔，將當前用戶ID添加到reposts陣列中
+      // 創建新的轉發文章
+      const repostData = {
+        title: post.title,
+        content: post.content,
+        authorId: currentUser.uid,
+        authorName: currentUser.displayName || '匿名用戶',
+        authorPhoto: currentUser.photoURL,
+        createdAt: Timestamp.now(),
+        likes: [],
+        comments: [],
+        reposts: [],
+        isRepost: true,
+        originalPostId: id,
+        originalAuthor: post.authorName,
+        images: post.images || []
+      };
+
+      // 將轉發文章添加到 posts collection
+      const docRef = await addDoc(collection(db, 'posts'), repostData);
+      
+      // 更新原文章的轉發計數
       await updateDoc(postRef, {
         reposts: arrayUnion(currentUser.uid)
       });
 
-      // 更新本地狀態，將當前用戶ID添加到reposts陣列中
+      // 更新本地狀態
       setPost(prev => ({
         ...prev,
         reposts: [...(prev.reposts || []), currentUser.uid]
       }));
+
+      // 提示用戶轉發成功
+      alert('轉發成功！');
+      
+      // 導航到新創建的轉發文章
+      navigate(`/post/${docRef.id}`);
     } catch (error) {
-      // 如果發生錯誤，將錯誤信息輸出到控制台
       console.error('Error reposting:', error);
+      alert('轉發失敗，請稍後再試');
     }
   };
 

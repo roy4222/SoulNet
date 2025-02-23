@@ -3,6 +3,7 @@
 import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 import { getAuth, setPersistence, browserLocalPersistence } from "firebase/auth";
+import { getStorage } from "firebase/storage";
 import { S3Client } from "@aws-sdk/client-s3";
 
 // Your web app's Firebase configuration
@@ -19,6 +20,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
+const storage = getStorage(app);
 
 // 設置身份驗證持久性為 LOCAL，這樣登入狀態會保存在 localStorage 中
 setPersistence(auth, browserLocalPersistence);
@@ -34,5 +36,5 @@ const r2Client = new S3Client({
   forcePathStyle: true // 需要這個來支援R2的路徑風格
 });
 
-export { db, auth, r2Client };
+export { db, auth, storage, r2Client };
 export default app;

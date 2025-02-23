@@ -4,6 +4,7 @@ import Register from './pages/Register';
 import HomePage from './pages/HomePage';
 import NewPost from './pages/NewPost';
 import Post from './pages/Post';
+import Profile from './pages/Profile';
 
 // 定義路由路徑常量
 export const ROUTES = {
@@ -11,7 +12,8 @@ export const ROUTES = {
     SIGN: '/sign',
     REGISTER: '/register',
     NEW_POST: '/NewPost',
-    POST_DETAIL: '/post/:id'
+    POST_DETAIL: '/post/:id',
+    PROFILE: '/profile'
 };
 
 // 定義路由配置
@@ -40,7 +42,13 @@ export const routes = [
         path: ROUTES.POST_DETAIL,
         element: Post,
         title: '文章詳情'
+    },
+    {
+        path: ROUTES.PROFILE,
+        element: Profile,
+        title: '個人資料'
     }
+    
 ];
 
 // 導出所有路由配置
