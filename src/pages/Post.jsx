@@ -130,15 +130,19 @@ function Post() {
   // 處理評論功能
   const handleComment = async (e) => {
     e.preventDefault();
+    // 檢查用戶是否已登入，如果未登入則導向登入頁面
     if (!currentUser) {
       navigate('/sign');
       return;
     }
 
-    if (!comment.trim()) return;
+    // 檢查評論內容是否為空
+    if (!comment) return;
 
     try {
+      // 獲取文章的引用
       const postRef = doc(db, 'posts', id);
+      // 創建新的評論對象
       const newComment = {
         content: comment,
         author: {
@@ -147,20 +151,24 @@ function Post() {
           displayName: currentUser.displayName || '匿名用戶',
           photoURL: currentUser.photoURL
         },
-        // 使用 Firestore Timestamp
+        // 使用 Firestore Timestamp 記錄評論創建時間
         createdAt: Timestamp.now()
       };
 
+      // 更新文章文檔，將新評論添加到評論陣列中
       await updateDoc(postRef, {
         comments: arrayUnion(newComment)
       });
 
+      // 更新本地狀態，將新評論添加到評論陣列中
       setPost(prev => ({
         ...prev,
         comments: [...(prev.comments || []), newComment]
       }));
+      // 清空評論輸入框
       setComment('');
     } catch (error) {
+      // 捕獲並記錄錯誤
       console.error('Error adding comment:', error);
     }
   };
@@ -381,48 +389,54 @@ function Post() {
         </motion.article>
         
 
-        {/* 評論區 */}
+        {/* 評論區塊 */}
         <motion.section
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.3, delay: 0.2 }}
-          className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md"
-          id="comments"
+          initial={{ y: 20, opacity: 0 }}  // 初始狀態：向下偏移20px，完全透明
+          animate={{ y: 0, opacity: 1 }}   // 動畫結束狀態：回到原位，完全不透明
+          transition={{ duration: 0.3, delay: 0.2 }}  // 動畫持續0.3秒，延遲0.2秒開始
+          className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md"  // 樣式：白色背景（深色模式為深灰），內邊距，圓角，陰影
+          id="comments"  // 用於定位的ID
         >
+          {/* 評論數量標題 */}
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-8">
-            評論 ({post.comments?.length || 0})
+            評論 ({post.comments?.length || 0})  {/* 顯示評論數量，如果沒有評論則顯示0 */}
           </h2>
 
-          {/* 評論表單 */}
+          {/* 評論輸入表單 */}
           <form onSubmit={handleComment} className="mb-10">
+            {/* 多行文本輸入框 */}
             <TextField
-              multiline
-              rows={4}
-              fullWidth
-              value={comment}
-              onChange={(e) => setComment(e.target.value)}
-              placeholder="分享你的想法..."
-              className="mb-6 bg-white dark:bg-gray-700"
+              multiline  // 允許多行輸入
+              rows={4}  // 設置4行高度
+              fullWidth  // 佔滿整個寬度
+              value={comment}  // 綁定評論內容
+              onChange={(e) => setComment(e.target.value)}  // 更新評論內容
+              placeholder="分享你的想法..."  // 佔位符文本
+              className="mb-6 bg-white dark:bg-gray-700"  // 樣式：下邊距，背景色
               InputProps={{
-                className: 'dark:text-white rounded-lg',
+                className: 'dark:text-white rounded-lg',  // 深色模式文字顏色，圓角
               }}
             />
+            {/* 按鈕容器 */}
             <div className="flex justify-end space-x-4 mt-4">
+              {/* 取消按鈕 */}
               <Button 
                 type="button" 
                 variant="outlined"
-                onClick={() => setComment('')}
+                onClick={() => setComment('')}  // 點擊時清空評論
                 className="px-6 py-2 rounded-full text-gray-600 border-gray-300 hover:bg-gray-100 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-800"
               >
                 取消
               </Button>
+              {/* 發表評論按鈕 */}
               <Button 
                 type="submit" 
                 variant="contained" 
-                disabled={!comment.trim()}
+                disabled={!comment}  // 當評論為空時禁用按鈕
                 className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 dark:from-indigo-600 dark:to-purple-700 dark:hover:from-indigo-700 dark:hover:to-purple-800 text-white font-semibold px-8 py-2 rounded-full shadow-md hover:shadow-lg transition duration-300 ease-in-out transform hover:-translate-y-1 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <span className="flex items-center text-white">
+                  {/* 發送圖標 */}
                   <svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 24 24" className="h-5 w-5 mr-2 text-white"><g fill="none"><path d="m12.593 23.258l-.011.002l-.071.035l-.02.004l-.014-.004l-.071-.035q-.016-.005-.024.005l-.004.01l-.017.428l.005.02l.01.013l.104.074l.015.004l.012-.004l.104-.074l.012-.016l.004-.017l-.017-.427q-.004-.016-.017-.018m.265-.113l-.013.002l-.185.093l-.01.01l-.003.011l.018.43l.005.012l.008.007l.201.093q.019.005.029-.008l.004-.014l-.034-.614q-.005-.018-.02-.022m-.715.002a.02.02 0 0 0-.027.006l-.006.014l-.034.614q.001.018.017.024l.015-.002l.201-.093l.01-.008l.004-.011l.017-.43l-.003-.012l-.01-.01z"/><path fill="currentColor" d="M20.25 3.532a1 1 0 0 1 1.183 1.329l-6 15.5a1 1 0 0 1-1.624.362l-3.382-3.235l-1.203 1.202c-.636.636-1.724.186-1.724-.714v-3.288L2.309 9.723a1 1 0 0 1 .442-1.691l17.5-4.5Zm-2.114 4.305l-7.998 6.607l3.97 3.798zm-1.578-1.29L4.991 9.52l3.692 3.53l7.875-6.505Z"/></g></svg>
                   發表評論
                 </span>
@@ -433,19 +447,23 @@ function Post() {
           {/* 評論列表 */}
           <div className="space-y-8">
             {post.comments?.map((comment, index) => (
+              // 使用 motion.div 創建動畫效果的評論項目
               <motion.div
                 key={index}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: index * 0.1 }}
+                initial={{ opacity: 0, y: 20 }}  // 初始狀態：透明度為0，向下偏移20px
+                animate={{ opacity: 1, y: 0 }}   // 動畫結束狀態：完全不透明，回到原位
+                transition={{ duration: 0.3, delay: index * 0.1 }}  // 動畫持續0.3秒，每個評論延遲0.1秒
                 className="flex gap-4 items-start"
               >
+                {/* 評論者頭像 */}
                 <img 
                   src={comment.author?.photoURL || 'https://api.dicebear.com/7.x/avataaars/svg?seed=default'} 
                   alt={comment.author?.displayName || '匿名用戶'} 
                   className="w-12 h-12 rounded-full object-cover"
                 />
+                {/* 評論內容區塊 */}
                 <div className="flex-1 bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                  {/* 評論者信息和時間 */}
                   <div className="flex items-center gap-2 mb-2">
                     <span className="font-semibold text-gray-900 dark:text-white">
                       {comment.author?.email || comment.author?.displayName || '匿名用戶'}
@@ -454,7 +472,8 @@ function Post() {
                       {formatDistanceToNow(comment.createdAt?.toDate(), { addSuffix: true, locale: zhTW })}
                     </span>
                   </div>
-                  <p className="text-gray-700 dark:text-gray-300 text-lg">{comment.content}</p>
+                  {/* 評論文字內容 */}
+                  <p className="text-gray-700 dark:text-gray-300 text-lg whitespace-pre-wrap">{comment.content}</p>
                 </div>
               </motion.div>
             ))}
