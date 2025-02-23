@@ -34,6 +34,46 @@ function HomePage() {
     }));
   };
 
+  // 處理點讚功能
+  const handleLike = async (post) => {
+    // 檢查用戶是否已登入，如果未登入則導向登入頁面
+    if (!currentUser) {
+      navigate('/login');
+      return;
+    }
+
+    try {
+      // 獲取文章的引用
+      const postRef = doc(db, 'posts', post.id);
+      // 檢查當前用戶是否已經點讚
+      const isLiked = post.likes?.includes(currentUser.uid);
+      
+      // 更新文章文檔，根據是否已點讚來添加或移除用戶ID
+      await updateDoc(postRef, {
+        likes: isLiked 
+          ? arrayRemove(currentUser.uid)
+          : arrayUnion(currentUser.uid)
+      });
+
+      // 更新本地狀態
+      setPosts(prevPosts => 
+        prevPosts.map(p => 
+          p.id === post.id
+            ? { 
+                ...p, 
+                likes: isLiked
+                  ? p.likes.filter(id => id !== currentUser.uid) // 移除當前用戶的點讚
+                  : [...(p.likes || []), currentUser.uid] // 添加當前用戶的點讚
+              }
+            : p
+        )
+      );
+    } catch (error) {
+      // 如果發生錯誤，將錯誤信息輸出到控制台
+      console.error('Error updating like:', error);
+    }
+  };
+
   // 使用 useEffect 鉤子在組件加載時獲取分類
   useEffect(() => {
     // 定義異步函數以獲取分類
@@ -149,42 +189,6 @@ function HomePage() {
     window.scrollTo(0, 0);
     // 使用 React Router 的 navigate 函數跳轉到指定的貼文頁面
     navigate(`/post/${postId}`);
-  };
-
-  const handleLike = async (post) => {
-    if (!currentUser) {
-      navigate('/sign');
-      return;
-    }
-
-    const postRef = doc(db, 'posts', post.id);
-    if (post.likes?.includes(currentUser?.uid)) {
-      await updateDoc(postRef, {
-        likes: arrayRemove(currentUser?.uid)
-      });
-    } else {
-      await updateDoc(postRef, {
-        likes: arrayUnion(currentUser?.uid)
-      });
-    }
-  };
-
-  const handleRepost = async (post) => {
-    if (!currentUser) {
-      navigate('/sign');
-      return;
-    }
-
-    const postRef = doc(db, 'posts', post.id);
-    if (post.reposts?.includes(currentUser?.uid)) {
-      await updateDoc(postRef, {
-        reposts: arrayRemove(currentUser?.uid)
-      });
-    } else {
-      await updateDoc(postRef, {
-        reposts: arrayUnion(currentUser?.uid)
-      });
-    }
   };
 
   const handleShare = async (post) => {
@@ -368,9 +372,9 @@ function HomePage() {
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
-                            handleLike(post);
+                            handleLike(post);  // 傳遞post對象
                           }}
-                          className="flex items-center gap-2 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-all duration-200 group relative" 
+                          className="flex items-center gap-2 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-all duration-200 group relative"
                         >
                           {post.likes?.includes(currentUser?.uid) 
                             ? <FavoriteRoundedIcon className="w-6 h-6 text-red-500" />
@@ -394,8 +398,8 @@ function HomePage() {
                             <path fill="currentColor" d="M12 2A10 10 0 0 0 2 12a9.9 9.9 0 0 0 2.26 6.33l-2 2a1 1 0 0 0-.21 1.09A1 1 0 0 0 3 22h9a10 10 0 0 0 0-20m0 18H5.41l.93-.93a1 1 0 0 0 0-1.41A8 8 0 1 1 12 20"/>
                           </svg>
                           <span className="text-sm font-medium">{post.comments?.length || 0}</span>
-                           {/* 滑鼠懸停時顯示的提示文字 */}
-                           <span className="invisible group-hover:visible absolute bottom-full mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded whitespace-nowrap">評論</span>
+                          {/* 滑鼠懸停時顯示的提示文字 */}
+                          <span className="invisible group-hover:visible absolute bottom-full mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded whitespace-nowrap">評論</span>
                         </button>
 
                         {/* 轉發按鈕 */}
@@ -403,12 +407,12 @@ function HomePage() {
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
-                            handleRepost(post);
+                            // handleRepost(post);
                           }}
                           className="flex items-center gap-2 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-all duration-200 group relative"
                         >
                           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 21 21" className="group-hover:text-green-500">
-                            <g fill="none" fillRule="evenodd" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
+                            <g fill="none" fillRule="evenodd" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5">
                               <path d="m13.5 13.5l3 3l3-3"/>
                               <path d="M9.5 4.5h3a4 4 0 0 1 4 4v8m-9-9l-3-3l-3 3"/>
                               <path d="M11.5 16.5h-3a4 4 0 0 1-4-4v-8"/>

@@ -221,7 +221,7 @@ export default function Header() {
                                                     onClick={() => setShowDropdown(false)}
                                                 >
                                                     個人資料
-                                                </Link>
+                                                </Link>  
                                                 {/* 登出按鈕 */}
                                                 <button 
                                                     onClick={() => {
