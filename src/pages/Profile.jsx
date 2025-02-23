@@ -53,121 +53,77 @@ function Profile() {
             const endpoint = import.meta.env.VITE_R2_ENDPOINT;
             const bucket = import.meta.env.VITE_R2_BUCKET;
             
-            if (!endpoint) {
-                throw new Error('未設定 R2 Endpoint (VITE_R2_ENDPOINT)');
+            if (!endpoint || !bucket) {
+                throw new Error('未設定 R2 配置');
             }
-            
-            if (!bucket) {
-                throw new Error('未設定 R2 Bucket (VITE_R2_BUCKET)');
-            }
-            
-            console.log('開始更新用戶資料...');
 
-            // 如果有新頭像，先上傳到 Cloudflare R2
             let avatarUrl = user?.photoURL || DEFAULT_AVATAR;
+            
+            // 如果有新頭像，先上傳到 Cloudflare R2
             if (editForm.avatar) {
-                console.log('開始上傳頭像到 R2...');
-                try {
-                    const fileExtension = editForm.avatar.name.split('.').pop();
-                    const timestamp = Date.now();
-                    const randomString = Math.random().toString(36).substring(2, 8);
-                    const fileName = `avatars/${currentUser.uid}_${timestamp}_${randomString}.${fileExtension}`;
-                    
-                    // 將File轉換為ArrayBuffer
-                    const buffer = await editForm.avatar.arrayBuffer();
-                    
-                    console.log('準備上傳到 R2...', {
-                        bucket: bucket,
-                        fileName: fileName,
-                        contentType: editForm.avatar.type
-                    });
-                    
-                    // 上傳到 R2
-                    await r2Client.send(new PutObjectCommand({
-                        Bucket: bucket,
-                        Key: fileName,
-                        Body: buffer,
-                        ContentType: editForm.avatar.type,
-                        CacheControl: 'no-cache',
-                    }));
-                    
-                    console.log('頭像上傳成功');
-                    // 構建 R2 URL
-                    const publicUrl = `https://${endpoint}/${fileName}`;
-                    avatarUrl = publicUrl;
-                    console.log('取得頭像 URL:', avatarUrl);
-
-                    // 刪除舊的頭像
-                    if (user?.photoURL && user.photoURL !== DEFAULT_AVATAR) {
-                        try {
-                            const oldFileName = user.photoURL.split('/').pop();
-                            if (oldFileName.startsWith('avatars/')) {
-                                await r2Client.send(new DeleteObjectCommand({
-                                    Bucket: bucket,
-                                    Key: oldFileName
-                                }));
-                                console.log('舊頭像刪除成功');
-                            }
-                        } catch (err) {
-                            console.error('刪除舊頭像時發生錯誤:', err);
-                            // 不中斷流程，繼續執行
-                        }
+                const fileExtension = editForm.avatar.name.split('.').pop();
+                const timestamp = Date.now();
+                const randomString = Math.random().toString(36).substring(2, 8);
+                const fileName = `avatars/${currentUser.uid}_${timestamp}_${randomString}.${fileExtension}`;
+                
+                // 將 File 轉換為 ArrayBuffer
+                const buffer = await editForm.avatar.arrayBuffer();
+                
+                // 上傳到 R2
+                await r2Client.send(new PutObjectCommand({
+                    Bucket: bucket,
+                    Key: fileName,
+                    Body: buffer,
+                    ContentType: editForm.avatar.type,
+                    CacheControl: 'no-cache',
+                }));
+                
+                // 構建 R2 URL
+                avatarUrl = `https://${endpoint}/${fileName}`;
+                
+                // 上傳成功後再刪除舊頭像
+                if (user?.photoURL && user.photoURL !== DEFAULT_AVATAR) {
+                    const oldFileName = user.photoURL.split('/').pop();
+                    if (oldFileName.startsWith('avatars/')) {
+                        await r2Client.send(new DeleteObjectCommand({
+                            Bucket: bucket,
+                            Key: oldFileName
+                        }));
                     }
-                } catch (err) {
-                    console.error('上傳頭像時發生錯誤:', err);
-                    throw new Error('上傳頭像失敗: ' + err.message);
                 }
             }
 
-            // 更新 Firebase Auth 資料
-            console.log('更新 Auth 資料...');
-            try {
-                await updateProfile(currentUser, {
+            // 並行更新 Auth 和 Firestore 資料
+            await Promise.all([
+                updateProfile(currentUser, {
                     displayName: editForm.displayName,
                     photoURL: avatarUrl
-                });
-                console.log('Auth 資料更新成功');
-
-                // 重新載入用戶資料
-                await currentUser.reload();
-                const freshUser = auth.currentUser;
-                
-                // 確保 localStorage 同步更新
-                const userData = {
-                    uid: freshUser.uid,
-                    email: freshUser.email,
-                    displayName: freshUser.displayName,
-                    photoURL: freshUser.photoURL
-                };
-                localStorage.setItem('social:user', JSON.stringify(userData));
-                
-            } catch (err) {
-                console.error('更新 Auth 資料時發生錯誤:', err);
-                throw new Error('更新用戶資料失敗: ' + err.message);
-            }
-
-            // 更新 Firestore 資料
-            console.log('更新 Firestore 資料...');
-            try {
-                await updateDoc(doc(db, 'users', currentUser.uid), {
+                }),
+                updateDoc(doc(db, 'users', currentUser.uid), {
                     displayName: editForm.displayName,
                     bio: editForm.bio,
                     photoURL: avatarUrl,
                     updatedAt: new Date()
-                });
-                console.log('Firestore 資料更新成功');
-            } catch (err) {
-                console.error('更新 Firestore 資料時發生錯誤:', err);
-                throw new Error('更新用戶資料失敗: ' + err.message);
-            }
+                })
+            ]);
 
-            // 更新本地狀態
-            setUser(prev => ({
-                ...prev,
+            // 直接更新本地狀態
+            const updatedUserData = {
+                ...user,
                 displayName: editForm.displayName,
                 photoURL: avatarUrl,
                 bio: editForm.bio
-            }));
+            };
+            setUser(updatedUserData);
+
+            // 更新 localStorage
+            const localStorageData = {
+                uid: currentUser.uid,
+                email: currentUser.email,
+                displayName: editForm.displayName,
+                photoURL: avatarUrl
+            };
+            localStorage.setItem('social:user', JSON.stringify(localStorageData));
 
             // 清除預覽和編輯狀態
             if (imagePreview) {
@@ -175,18 +131,17 @@ function Profile() {
                 setImagePreview(null);
             }
             setIsEditing(false);
-            setIsLoading(false);
 
             // 觸發 auth 狀態變化
             const authEvent = new CustomEvent('auth-state-changed', {
-                detail: { user: auth.currentUser }
+                detail: { user: currentUser }
             });
             window.dispatchEvent(authEvent);
 
-            console.log('用戶資料更新完成');
         } catch (err) {
             console.error('更新個人資料時發生錯誤:', err);
             setError(err.message || '更新資料時發生錯誤');
+        } finally {
             setIsLoading(false);
         }
     };
@@ -258,80 +213,43 @@ function Profile() {
                     return;
                 }
 
-                // 從 Firestore 獲取用戶資料
-                const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+                const [userDoc, postsSnapshot, repostsSnapshot] = await Promise.all([
+                    getDoc(doc(db, 'users', currentUser.uid)),
+                    getDocs(query(collection(db, 'posts'), 
+                        where('authorId', '==', currentUser.uid), 
+                        where('isRepost', '==', false))),
+                    getDocs(query(collection(db, 'posts'), 
+                        where('authorId', '==', currentUser.uid), 
+                        where('isRepost', '==', true)))
+                ]);
+
+                // 處理用戶資料
                 if (userDoc.exists()) {
-                    const userData = {
-                        ...currentUser,
-                        ...userDoc.data()
-                    };
-                    // 確保有預設值
+                    const userData = { ...currentUser, ...userDoc.data() };
                     userData.photoURL = userData.photoURL || DEFAULT_AVATAR;
-                    userData.displayName = userData.displayName || '未設定名稱';
-                    userData.bio = userData.bio || '';
-                    
                     setUser(userData);
-                    setEditForm({
-                        displayName: userData.displayName,
-                        bio: userData.bio || '',
-                        avatar: null
-                    });
-                } else {
-                    // 如果用戶文檔不存在，創建一個新的
-                    const newUserData = {
-                        uid: currentUser.uid,
-                        email: currentUser.email,
-                        displayName: currentUser.displayName || '未設定名稱',
-                        photoURL: currentUser.photoURL || DEFAULT_AVATAR,
-                        bio: '',
-                        createdAt: new Date(),
-                        updatedAt: new Date()
-                    };
-                    await setDoc(doc(db, 'users', currentUser.uid), newUserData);
-                    setUser(newUserData);
-                    setEditForm({
-                        displayName: newUserData.displayName,
-                        bio: '',
-                        avatar: null
+                    setEditForm({ 
+                        displayName: userData.displayName, 
+                        bio: userData.bio || '', 
+                        avatar: null 
                     });
                 }
 
-                // 載入用戶的原創文章
-                const postsQuery = query(
-                    collection(db, 'posts'),
-                    where('authorId', '==', currentUser.uid),
-                    where('isRepost', '==', false)
-                );
-                const postsSnapshot = await getDocs(postsQuery);
-                const postsData = postsSnapshot.docs.map(doc => ({
-                    id: doc.id,
-                    ...doc.data()
-                }));
-
-                // 在前端進行排序（按創建時間降序）
-                postsData.sort((a, b) => b.createdAt?.toDate() - a.createdAt?.toDate());
+                // 處理文章和轉發文章
+                const postsData = postsSnapshot.docs
+                    .map(doc => ({ id: doc.id, ...doc.data() }))
+                    .sort((a, b) => b.createdAt?.toDate() - a.createdAt?.toDate());
+                    
+                const repostsData = repostsSnapshot.docs
+                    .map(doc => ({ id: doc.id, ...doc.data() }))
+                    .sort((a, b) => b.createdAt?.toDate() - a.createdAt?.toDate());
+                
                 setPosts(postsData);
-
-                // 載入用戶的轉發文章
-                const repostsQuery = query(
-                    collection(db, 'posts'),
-                    where('authorId', '==', currentUser.uid),
-                    where('isRepost', '==', true)
-                );
-                const repostsSnapshot = await getDocs(repostsQuery);
-                const repostsData = repostsSnapshot.docs.map(doc => ({
-                    id: doc.id,
-                    ...doc.data()
-                }));
-
-                // 在前端進行排序（按創建時間降序）
-                repostsData.sort((a, b) => b.createdAt?.toDate() - a.createdAt?.toDate());
                 setReposts(repostsData);
-
-                setIsLoading(false);
             } catch (err) {
-                console.error('Error loading user data:', err);
+                console.error('載入用戶資料時發生錯誤:', err);
                 setError('載入資料時發生錯誤');
+            } finally {
                 setIsLoading(false);
             }
         };
