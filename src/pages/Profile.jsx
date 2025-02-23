@@ -16,6 +16,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { zhTW } from 'date-fns/locale';
 import { PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { r2Client } from '../utils/firebase';
+import { useTheme } from '../contexts/themeContext';
 
 // 預設頭像
 const DEFAULT_AVATAR = 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSCvBNjFR_6BVhW3lFNwF0oEk2N8JXjeiaSqg&s';
@@ -38,6 +39,7 @@ function Profile() {
         avatar: null
     });
     const [activeTab, setActiveTab] = useState(0);  // 儲存目前的分頁索引
+    const { isDarkMode } = useTheme();
 
     // 處理表單提交
     const handleSubmit = async () => {
@@ -427,11 +429,20 @@ function Profile() {
                                         onChange={(e) => setEditForm(prev => ({ ...prev, displayName: e.target.value }))}
                                         sx={{
                                             '& .MuiOutlinedInput-root': {
-                                                backgroundColor: 'white',
+                                                backgroundColor: isDarkMode ? 'rgba(55, 65, 81, 0.1)' : 'white',
                                                 borderRadius: '12px',
                                                 '&:hover fieldset': {
                                                     borderColor: 'rgb(59, 130, 246)'
                                                 }
+                                            },
+                                            '& .MuiInputLabel-root': {
+                                                color: isDarkMode ? 'rgb(209, 213, 219)' : 'inherit'
+                                            },
+                                            '& .MuiOutlinedInput-input': {
+                                                color: isDarkMode ? 'white' : 'inherit'
+                                            },
+                                            '& .MuiOutlinedInput-notchedOutline': {
+                                                borderColor: isDarkMode ? 'rgba(209, 213, 219, 0.3)' : 'inherit'
                                             }
                                         }}
                                     />
@@ -445,11 +456,20 @@ function Profile() {
                                         onChange={(e) => setEditForm(prev => ({ ...prev, bio: e.target.value }))}
                                         sx={{
                                             '& .MuiOutlinedInput-root': {
-                                                backgroundColor: 'white',
+                                                backgroundColor: isDarkMode ? 'rgba(55, 65, 81, 0.1)' : 'white',
                                                 borderRadius: '12px',
                                                 '&:hover fieldset': {
                                                     borderColor: 'rgb(59, 130, 246)'
                                                 }
+                                            },
+                                            '& .MuiInputLabel-root': {
+                                                color: isDarkMode ? 'rgb(209, 213, 219)' : 'inherit'
+                                            },
+                                            '& .MuiOutlinedInput-input': {
+                                                color: isDarkMode ? 'white' : 'inherit'
+                                            },
+                                            '& .MuiOutlinedInput-notchedOutline': {
+                                                borderColor: isDarkMode ? 'rgba(209, 213, 219, 0.3)' : 'inherit'
                                             }
                                         }}
                                     />
@@ -460,10 +480,11 @@ function Profile() {
                                             onClick={handleSubmit}
                                             disabled={isLoading}
                                             sx={{
-                                                backgroundColor: 'rgb(59, 130, 246)',
+                                                backgroundColor: isDarkMode ? 'rgb(37, 99, 235)' : 'rgb(59, 130, 246)',
                                                 '&:hover': {
-                                                    backgroundColor: 'rgb(37, 99, 235)'
+                                                    backgroundColor: isDarkMode ? 'rgb(29, 78, 216)' : 'rgb(37, 99, 235)'
                                                 },
+                                                color: 'white',
                                                 borderRadius: '10px',
                                                 textTransform: 'none',
                                                 padding: '8px 24px'
@@ -477,11 +498,11 @@ function Profile() {
                                             onClick={handleCancel}
                                             disabled={isLoading}
                                             sx={{
-                                                borderColor: 'rgb(209, 213, 219)',
-                                                color: 'rgb(55, 65, 81)',
+                                                borderColor: isDarkMode ? 'rgba(209, 213, 219, 0.5)' : 'rgb(209, 213, 219)',
+                                                color: isDarkMode ? 'rgb(209, 213, 219)' : 'rgb(55, 65, 81)',
                                                 '&:hover': {
-                                                    borderColor: 'rgb(156, 163, 175)',
-                                                    backgroundColor: 'rgba(243, 244, 246, 0.1)'
+                                                    borderColor: isDarkMode ? 'rgb(209, 213, 219)' : 'rgb(156, 163, 175)',
+                                                    backgroundColor: isDarkMode ? 'rgba(209, 213, 219, 0.1)' : 'rgba(243, 244, 246, 0.1)'
                                                 },
                                                 borderRadius: '10px',
                                                 textTransform: 'none',
