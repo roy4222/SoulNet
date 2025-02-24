@@ -12,25 +12,11 @@ import { useAuth } from '../contexts/AuthContext';
 import { formatDistanceToNow } from 'date-fns';
 import { zhTW } from 'date-fns/locale';
 
-// localStorage 的 key
-const USER_KEY = 'social:user';
+
 
 // 定義 Post 組件
 function Post() {
   // 定義狀態變量和鉤子
-  const [user, setUser] = useState(() => {
-    // 初始化時從 localStorage 讀取用戶資訊
-    const savedUser = localStorage.getItem(USER_KEY);
-    return savedUser ? JSON.parse(savedUser) : null;
-  });
-  // 使用 React Router 的 hooks
-  const { id } = useParams();
-  const navigate = useNavigate();
-  
-  // 使用自定義的 Auth hook
-  const { currentUser } = useAuth();
-  
-  // 定義狀態變數
   const [post, setPost] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [comment, setComment] = useState('');
@@ -40,6 +26,13 @@ function Post() {
   const [selectedImage, setSelectedImage] = useState(null);
   const [views, setViews] = useState(0);
 
+  // 使用 React Router 的 hooks
+  const { id } = useParams();
+  const navigate = useNavigate();
+  
+  // 使用自定義的 Auth hook
+  const { currentUser } = useAuth();
+  
   // 格式化時間的輔助函數
   const formatTime = (timestamp) => {
     try {
@@ -71,10 +64,46 @@ function Post() {
           // 獲取文檔數據
           const postData = postDoc.data();
 
-          // 設置文章狀態，包括 id 和所有文檔數據
+          // 獲取作者的最新資訊
+          const authorDoc = await getDoc(doc(db, 'users', postData.author.uid));
+          const authorData = authorDoc.exists() ? authorDoc.data() : null;
+
+          // 合併作者的最新資訊
+          const updatedAuthor = authorData ? {
+            ...postData.author,
+            displayName: authorData.displayName || postData.author.displayName,
+            photoURL: authorData.photoURL || postData.author.photoURL
+          } : postData.author;
+
+          // 更新評論中的作者資訊
+          const updatedComments = await Promise.all((postData.comments || []).map(async (comment) => {
+            try {
+              const commentAuthorDoc = await getDoc(doc(db, 'users', comment.author.uid));
+              const commentAuthorData = commentAuthorDoc.exists() ? commentAuthorDoc.data() : null;
+              
+              // 如果找到作者資訊就更新,否則保持原樣
+              const updatedCommentAuthor = commentAuthorData ? {
+                ...comment.author,
+                displayName: commentAuthorData.displayName || comment.author.displayName,
+                photoURL: commentAuthorData.photoURL || comment.author.photoURL
+              } : comment.author;
+
+              return {
+                ...comment,
+                author: updatedCommentAuthor
+              };
+            } catch (error) {
+              console.error('Error fetching comment author:', error);
+              return comment;
+            }
+          }));
+
+          // 設置文章狀態，包括最新的作者資訊和評論
           setPost({ 
             id: postDoc.id, 
             ...postData,
+            author: updatedAuthor,
+            comments: updatedComments,
             // 保持原始 Timestamp，在顯示時再轉換
             createdAt: postData.createdAt
           });
@@ -205,16 +234,19 @@ function Post() {
       const repostData = {
         title: post.title,
         content: post.content,
-        authorId: currentUser.uid,
-        authorName: currentUser.displayName || '匿名用戶',
-        authorPhoto: currentUser.photoURL,
+        author: {
+          uid: currentUser.uid,
+          displayName: currentUser.displayName || '匿名用戶',
+          photoURL: currentUser.photoURL,
+          email: currentUser.email
+        },
         createdAt: Timestamp.now(),
         likes: [],
         comments: [],
         reposts: [],
         isRepost: true,
         originalPostId: id,
-        originalAuthor: post.authorName,
+        originalAuthor: post.author?.displayName || '匿名用戶',
         images: post.images || []
       };
 
@@ -301,13 +333,13 @@ function Post() {
           {/* 文章標題和作者資訊 */}
           <div className="flex items-center gap-3 mb-4">
             <img 
-              src={user.photoURL || DEFAULT_AVATAR}  
-              alt= {user.displayName || '使用者'}
+              src={post.author?.photoURL || DEFAULT_AVATAR}  
+              alt={post.author?.displayName || '使用者'}
               className="w-10 h-10 rounded-full object-cover"
             />
             <div>
               <h3 className="font-medium text-gray-900 dark:text-white">
-                {user.displayName || '使用者'}
+                {post.author?.displayName || '使用者'}
               </h3>
               <p className="text-sm text-gray-500 dark:text-gray-400">
                 {post.createdAt?.toDate().toLocaleString('zh-TW', {
@@ -469,7 +501,7 @@ function Post() {
               >
                 <span className="flex items-center text-white">
                   {/* 發送圖標 */}
-                  <svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 24 24" className="h-5 w-5 mr-2 text-white"><g fill="none"><path d="m12.593 23.258l-.011.002l-.071.035l-.02.004l-.014-.004l-.071-.035q-.016-.005-.024.005l-.004.01l-.017.428l.005.02l.01.013l.104.074l.015.004l.012-.004l.104-.074l.012-.016l.004-.017l-.017-.427q-.004-.016-.017-.018m.265-.113l-.013.002l-.185.093l-.01.01l-.003.011l.018.43l.005.012l.008.007l.201.093q.019.005.029-.008l.004-.014l-.034-.614q-.005-.018-.02-.022m-.715.002a.02.02 0 0 0-.027.006l-.006.014l-.034.614q.001.018.017.024l.015-.002l.201-.093l.01-.008l.004-.011l.017-.43l-.003-.012l-.01-.01z"/><path fill="currentColor" d="M20.25 3.532a1 1 0 0 1 1.183 1.329l-6 15.5a1 1 0 0 1-1.624.362l-3.382-3.235l-1.203 1.202c-.636.636-1.724.186-1.724-.714v-3.288L2.309 9.723a1 1 0 0 1 .442-1.691l17.5-4.5Zm-2.114 4.305l-7.998 6.607l3.97 3.798zm-1.578-1.29L4.991 9.52l3.692 3.53l7.875-6.505Z"/></g></svg>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 24 24" className="h-5 w-5 mr-2 text-white"><g fill="none"><path d="m12.593 23.258l-.011.002l-.071.035l-.02.004l-.014-.004l-.071-.035q-.016-.005-.024.005l-.004.01l-.017.428l.005.02l.01.013l.104.074l.015.004l.012-.004l.104-.074l.012-.016l.004-.017l-.017-.427q-.004-.016-.017-.018m.265-.113l-.013.002l-.185.093l-.01.01l-.003.011l.018.43l.005.012l.008.007l.201.093q.019.005.029-.008l.004-.014l-.034-.614q-.005-.018-.02-.022m-.715.002a.02.02 0 0 0-.027.006l-.006.014l-.034.614q.001.018.017.024l.015-.002l.201-.093l.01-.008l.004-.011l.017-.43l-.003-.012l-.01-.01z"/><path fill="currentColor" d="M20.25 3.532a1 3.5 0 0 1 1.183 1.329l-6 15.5a1 3.5 0 0 1-1.624.362l-3.382-3.235l-1.203 1.202c-.636.636-1.724.186-1.724-.714v-3.288L2.309 9.723a1 3.5 0 0 1 .442-1.691l17.5-4.5Zm-2.114 4.305l-7.998 6.607l3.97 3.798zm-1.578-1.29L4.991 9.52l3.692 3.53l7.875-6.505Z"/></g></svg>
                   發表評論
                 </span>
               </Button>
@@ -489,8 +521,8 @@ function Post() {
               >
                 {/* 評論者頭像 */}
                 <img 
-                  src={user.photoURL || DEFAULT_AVATAR} 
-                  alt= {user.displayName || '使用者'}
+                  src={comment.author?.photoURL || DEFAULT_AVATAR} 
+                  alt={comment.author?.displayName || '使用者'}
                   className="w-12 h-12 rounded-full object-cover"
                 />
                 {/* 評論內容區塊 */}
@@ -498,7 +530,7 @@ function Post() {
                   {/* 評論者信息和時間 */}
                   <div className="flex items-center gap-2 mb-2">
                     <span className="font-semibold text-gray-900 dark:text-white">
-                      {user.displayName || '使用者'}
+                      {comment.author?.displayName || '使用者'}
                     </span>
                     <span className="text-sm text-gray-500 dark:text-gray-400">
                       {formatDistanceToNow(comment.createdAt?.toDate(), { addSuffix: true, locale: zhTW })}
