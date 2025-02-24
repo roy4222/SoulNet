@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import firebase from '../utils/firebase';
 import { getAuth, createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { getFirestore, doc, setDoc } from 'firebase/firestore';
 
 // 定義 Register 組件：用於處理用戶註冊的主要組件
 const Register = () => {
@@ -44,11 +45,23 @@ const Register = () => {
       // 生成隨機頭像URL
       const avatarUrl = `https://api.dicebear.com/7.x/avataaars/svg?seed=${username}-${Date.now()}`;
       
-      // 更新用戶的個人資料
-      await updateProfile(user, {
-        displayName: username, // 設置顯示名稱為用戶輸入的用戶名
-        photoURL: avatarUrl // 設置頭像URL為之前生成的隨機頭像
-      });
+      // 使用 Promise.all 同時更新 Auth 和 Firestore
+      await Promise.all([
+        // 更新 Auth 用戶資料
+        updateProfile(user, {
+          displayName: username,
+          photoURL: avatarUrl
+        }),
+        // 更新 Firestore 用戶資料
+        setDoc(doc(getFirestore(firebase), 'users', user.uid), {
+          displayName: username,
+          email: user.email,
+          photoURL: avatarUrl,
+          bio: '',
+          createdAt: new Date(),
+          updatedAt: new Date()
+        })
+      ]);
 
       // 設置成功狀態為true，觸發成功提示的顯示
       setShowSuccess(true);
