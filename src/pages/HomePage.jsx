@@ -10,8 +10,17 @@ import FavoriteBorderRoundedIcon from '@mui/icons-material/FavoriteBorderRounded
 import { doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
 
+// localStorage 的 key
+const USER_KEY = 'social:user';
+
 // 定義HomePage組件
 function HomePage() {
+   // 定義狀態變量和鉤子
+   const [user, setUser] = useState(() => {
+    // 初始化時從 localStorage 讀取用戶資訊
+    const savedUser = localStorage.getItem(USER_KEY);
+    return savedUser ? JSON.parse(savedUser) : null;
+  });
   // 定義狀態變數
   const [selectedCategory, setSelectedCategory] = useState('all'); // 當前選中的分類
   const [categories, setCategories] = useState([
@@ -291,14 +300,14 @@ function HomePage() {
                       <div className="flex items-center gap-3 mb-4">
                         {/* 作者頭像 */}
                         <img 
-                          src={post.author?.photoURL || 'https://api.dicebear.com/7.x/avataaars/svg?seed=default'} 
-                          alt={post.author?.displayName || '匿名用戶'} 
+                          src={user.photoURL || DEFAULT_AVATAR} 
+                          alt= {user.displayName || '使用者'}
                           className="w-10 h-10 rounded-full object-cover"
                         />
                         <div>
                           {/* 作者名稱或郵箱 */}
                           <h3 className="font-medium text-gray-900 dark:text-white">
-                            {post.author?.displayName || post.author?.email || '匿名用戶'}
+                            {user.displayName || '使用者'}
                           </h3>
                           {/* 發文時間 */}
                           <p className="text-sm text-gray-500 dark:text-gray-400">

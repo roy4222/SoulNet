@@ -4,19 +4,25 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { db } from '../utils/firebase';
 import { doc, getDoc, updateDoc, arrayUnion, arrayRemove, Timestamp, collection, addDoc } from 'firebase/firestore';
-import { Avatar, IconButton, TextField, Button } from '@mui/material';
+import {TextField, Button } from '@mui/material';
 import FavoriteRoundedIcon from '@mui/icons-material/FavoriteRounded';
 import FavoriteBorderRoundedIcon from '@mui/icons-material/FavoriteBorderRounded';
-import ShareRoundedIcon from '@mui/icons-material/ShareRounded';
-import RepeatRoundedIcon from '@mui/icons-material/RepeatRounded';
-import ChatBubbleOutlineRoundedIcon from '@mui/icons-material/ChatBubbleOutlineRounded';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { useAuth } from '../contexts/AuthContext';
 import { formatDistanceToNow } from 'date-fns';
 import { zhTW } from 'date-fns/locale';
 
+// localStorage 的 key
+const USER_KEY = 'social:user';
+
 // 定義 Post 組件
 function Post() {
+  // 定義狀態變量和鉤子
+  const [user, setUser] = useState(() => {
+    // 初始化時從 localStorage 讀取用戶資訊
+    const savedUser = localStorage.getItem(USER_KEY);
+    return savedUser ? JSON.parse(savedUser) : null;
+  });
   // 使用 React Router 的 hooks
   const { id } = useParams();
   const navigate = useNavigate();
@@ -295,13 +301,13 @@ function Post() {
           {/* 文章標題和作者資訊 */}
           <div className="flex items-center gap-3 mb-4">
             <img 
-              src={post.author?.photoURL || 'https://api.dicebear.com/7.x/avataaars/svg?seed=default'} 
-              alt={post.author?.displayName || '匿名用戶'} 
+              src={user.photoURL || DEFAULT_AVATAR}  
+              alt= {user.displayName || '使用者'}
               className="w-10 h-10 rounded-full object-cover"
             />
             <div>
               <h3 className="font-medium text-gray-900 dark:text-white">
-                {post.author?.email || post.author?.displayName || '匿名用戶'}
+                {user.displayName || '使用者'}
               </h3>
               <p className="text-sm text-gray-500 dark:text-gray-400">
                 {post.createdAt?.toDate().toLocaleString('zh-TW', {
@@ -483,8 +489,8 @@ function Post() {
               >
                 {/* 評論者頭像 */}
                 <img 
-                  src={comment.author?.photoURL || 'https://api.dicebear.com/7.x/avataaars/svg?seed=default'} 
-                  alt={comment.author?.displayName || '匿名用戶'} 
+                  src={user.photoURL || DEFAULT_AVATAR} 
+                  alt= {user.displayName || '使用者'}
                   className="w-12 h-12 rounded-full object-cover"
                 />
                 {/* 評論內容區塊 */}
@@ -492,7 +498,7 @@ function Post() {
                   {/* 評論者信息和時間 */}
                   <div className="flex items-center gap-2 mb-2">
                     <span className="font-semibold text-gray-900 dark:text-white">
-                      {comment.author?.email || comment.author?.displayName || '匿名用戶'}
+                      {user.displayName || '使用者'}
                     </span>
                     <span className="text-sm text-gray-500 dark:text-gray-400">
                       {formatDistanceToNow(comment.createdAt?.toDate(), { addSuffix: true, locale: zhTW })}
