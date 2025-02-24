@@ -1,22 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { db } from '../utils/firebase';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { Fab } from '@mui/material';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import { Link, useNavigate } from 'react-router-dom';
 import FavoriteRoundedIcon from '@mui/icons-material/FavoriteRounded';
 import FavoriteBorderRoundedIcon from '@mui/icons-material/FavoriteBorderRounded';
-import { doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
 
 // localStorage 的 key
 const USER_KEY = 'social:user';
+// 默認頭像
+const DEFAULT_AVATAR = 'https://pub-6ee61ab59e054c0facbe8351ca1efce0.r2.dev/default-avatar.png';
 
 // 定義HomePage組件
 function HomePage() {
-   // 定義狀態變量和鉤子
-   const [user, setUser] = useState(() => {
+  // 定義狀態變量和鉤子
+  const [users, setUsers] = useState({}); // 用戶資訊快取
+  const [user, setUser] = useState(() => {
     // 初始化時從 localStorage 讀取用戶資訊
     const savedUser = localStorage.getItem(USER_KEY);
     return savedUser ? JSON.parse(savedUser) : null;
@@ -83,6 +85,30 @@ function HomePage() {
     }
   };
 
+  // 獲取用戶資訊的函數
+  const fetchUserInfo = async (uid) => {
+    if (!uid) return null;
+    
+    // 如果快取中已有該用戶資訊,直接返回
+    if (users[uid]) return users[uid];
+
+    try {
+      const userDoc = await getDoc(doc(db, 'users', uid));
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        // 更新快取
+        setUsers(prev => ({
+          ...prev,
+          [uid]: userData
+        }));
+        return userData;
+      }
+    } catch (error) {
+      console.error('Error fetching user info:', error);
+    }
+    return null;
+  };
+
   // 使用 useEffect 鉤子在組件加載時獲取分類
   useEffect(() => {
     // 定義異步函數以獲取分類
@@ -124,48 +150,40 @@ function HomePage() {
         const querySnapshot = await getDocs(collection(db, 'posts'));
         const fetchedPosts = [];
         
+        // 獲取所有文章作者的 uid
+        const authorUids = new Set();
+        querySnapshot.forEach(doc => {
+          const postData = doc.data();
+          if (postData.author?.uid) {
+            authorUids.add(postData.author.uid);
+          }
+        });
+
+        // 預先獲取所有作者的資訊
+        const userPromises = Array.from(authorUids).map(uid => fetchUserInfo(uid));
+        await Promise.all(userPromises);
+        
         querySnapshot.forEach((doc) => {
           const postData = doc.data();
-          // 修正舊的圖片URL格式
           let imageUrl = postData.imageUrl;
-          console.log('原始imageUrl:', imageUrl);
           
           if (imageUrl) {
-            // 從URL中提取文件名
-            let fileName;
             if (imageUrl.includes('cloudflarestorage.com')) {
               const urlParts = imageUrl.split('/');
-              fileName = urlParts[urlParts.length - 1];
-              // 如果文件名前面是soulnet,需要去掉
-              if (fileName === 'soulnet') {
-                fileName = urlParts[urlParts.length - 1];
-              }
+              const fileName = urlParts[urlParts.length - 1];
               const endpoint = import.meta.env.VITE_R2_ENDPOINT;
               imageUrl = `https://${endpoint}/${fileName}`;
-              console.log('修正後imageUrl:', imageUrl);
             }
           }
-          
-          // 確保作者資訊被正確保存
-          const author = postData.author || {
-            displayName: '匿名用戶',
-            photoURL: null,
-            uid: null,
-            email: null
-          };
           
           fetchedPosts.push({
             id: doc.id,
             ...postData,
-            imageUrl,
-            author  // 確保作者資訊被正確保存
+            imageUrl
           });
         });
         
-        // 按創建時間降序排序
         fetchedPosts.sort((a, b) => b.createdAt - a.createdAt);
-        console.log('所有文章:', fetchedPosts);
-        
         setPosts(fetchedPosts);
       } catch (error) {
         console.error('Error fetching posts:', error);
@@ -300,14 +318,14 @@ function HomePage() {
                       <div className="flex items-center gap-3 mb-4">
                         {/* 作者頭像 */}
                         <img 
-                          src={user.photoURL || DEFAULT_AVATAR} 
-                          alt= {user.displayName || '使用者'}
+                          src={users[post.author?.uid]?.photoURL || DEFAULT_AVATAR} 
+                          alt={users[post.author?.uid]?.displayName || '匿名用戶'}
                           className="w-10 h-10 rounded-full object-cover"
                         />
                         <div>
                           {/* 作者名稱或郵箱 */}
                           <h3 className="font-medium text-gray-900 dark:text-white">
-                            {user.displayName || '使用者'}
+                            {users[post.author?.uid]?.displayName || '匿名用戶'}
                           </h3>
                           {/* 發文時間 */}
                           <p className="text-sm text-gray-500 dark:text-gray-400">
