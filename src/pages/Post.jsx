@@ -1,7 +1,7 @@
 // 引入必要的 React 函式和組件
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { db } from '../utils/firebase';
 import { doc, getDoc, updateDoc, arrayUnion, arrayRemove, Timestamp, collection, addDoc } from 'firebase/firestore';
 import {TextField, Button } from '@mui/material';
@@ -25,6 +25,9 @@ function Post() {
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
   const [views, setViews] = useState(0);
+  const [showSuccess, setShowSuccess] = useState(false);
+  // 添加排序方式狀態，預設為 'newest'
+  const [sortOrder, setSortOrder] = useState('newest');
 
   // 使用 React Router 的 hooks
   const { id } = useParams();
@@ -194,6 +197,10 @@ function Post() {
       await updateDoc(postRef, {
         comments: arrayUnion(newComment)
       });
+
+      // 顯示成功提示
+      setShowSuccess(true);
+      setTimeout(() => setShowSuccess(false), 2000);
 
       // 更新本地狀態，將新評論添加到評論陣列中
       setPost(prev => ({
@@ -509,8 +516,46 @@ function Post() {
           </form>
 
           {/* 評論列表 */}
+          {/* 排序按鈕 */}
+          <div className="flex justify-start mb-4 space-x-2">
+            {/* 最新留言按鈕 */}
+            <button
+              onClick={() => setSortOrder('newest')}
+              className={`px-4 py-2 rounded-full text-sm ${
+                sortOrder === 'newest'
+                  ? 'bg-blue-500 text-white'
+                  : 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
+              } transition-colors duration-200`}
+            >
+              最新留言
+            </button>
+            {/* 最舊留言按鈕 */}
+            <button
+              onClick={() => setSortOrder('oldest')}
+              className={`px-4 py-2 rounded-full text-sm ${
+                sortOrder === 'oldest'
+                  ? 'bg-blue-500 text-white'
+                  : 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
+              } transition-colors duration-200`}
+            >
+              最舊留言
+            </button>
+          </div>
+
+          {/* 評論列表容器 */}
           <div className="space-y-8">
-            {post.comments?.map((comment, index) => (
+            {/* 對評論進行排序和渲染 */}
+            {[...(post.comments || [])]
+              // 根據 sortOrder 對評論進行排序
+              .sort((a, b) => {
+                // 獲取評論的創建時間
+                const timeA = a.createdAt?.toDate().getTime();
+                const timeB = b.createdAt?.toDate().getTime();
+                // 根據 sortOrder 決定排序方式
+                return sortOrder === 'newest' ? timeB - timeA : timeA - timeB;
+              })
+              // 遍歷排序後的評論數組
+              .map((comment, index) => (
               // 使用 motion.div 創建動畫效果的評論項目
               <motion.div
                 key={index}
@@ -527,11 +572,13 @@ function Post() {
                 />
                 {/* 評論內容區塊 */}
                 <div className="flex-1 bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-                  {/* 評論者信息和時間 */}
+                  {/* 評論者信息和發布時間 */}
                   <div className="flex items-center gap-2 mb-2">
+                    {/* 顯示評論者名稱，如果沒有則顯示 '使用者' */}
                     <span className="font-semibold text-gray-900 dark:text-white">
                       {comment.author?.displayName || '使用者'}
                     </span>
+                    {/* 顯示評論發布時間，格式化為相對時間 */}
                     <span className="text-sm text-gray-500 dark:text-gray-400">
                       {formatDistanceToNow(comment.createdAt?.toDate(), { addSuffix: true, locale: zhTW })}
                     </span>
@@ -562,6 +609,19 @@ function Post() {
           />
         </div>
       )}
+      {/* 成功提示 */}
+      <AnimatePresence>
+        {showSuccess && (
+          <motion.div
+            initial={{ opacity: 0, y: -50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -50 }}
+            className="fixed top-20 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50"
+          >
+            訊息傳送成功！
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }

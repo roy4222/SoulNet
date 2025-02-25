@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { db } from '../utils/firebase';
 import { collection, getDocs, doc, getDoc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { Fab } from '@mui/material';
@@ -18,6 +18,7 @@ const DEFAULT_AVATAR = 'https://pub-6ee61ab59e054c0facbe8351ca1efce0.r2.dev/defa
 function HomePage() {
   // 定義狀態變量和鉤子
   const [users, setUsers] = useState({}); // 用戶資訊快取
+  const [showSuccess, setShowSuccess] = useState(false);
   const [user, setUser] = useState(() => {
     // 初始化時從 localStorage 讀取用戶資訊
     const savedUser = localStorage.getItem(USER_KEY);
@@ -221,7 +222,8 @@ function HomePage() {
   const handleShare = async (post) => {
     try {
       await navigator.clipboard.writeText(`${window.location.origin}/post/${post.id}`);
-      alert('連結已複製到剪貼簿！');
+      setShowSuccess(true);
+      setTimeout(() => setShowSuccess(false), 2000);
     } catch (error) {
       console.error('Error copying to clipboard:', error);
     }
@@ -424,7 +426,7 @@ function HomePage() {
                           className="flex items-center gap-2 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-all duration-200 group relative"
                         >
                           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" className="group-hover:text-blue-500">
-                            <path fill="currentColor" d="M13 14h-2a9 9 0 0 0-7.968 4.81A10 10 0 0 1 3 18C3 12.477 7.477 8 13 8V3l10 8l-10 8z"/>
+                              <path fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 21a9 9 0 1 0-9-9c0 1.488.36 2.891 1 4.127L3 21l4.873-1c1.236.64 2.64 1 4.127 1"/>
                           </svg>
                           <span className="text-sm font-medium">{post.comments?.length || 0}</span>
                           {/* 滑鼠懸停時顯示的提示文字 */}
@@ -529,6 +531,19 @@ function HomePage() {
           </svg>
         </button>
       </motion.div>
+      {/* 成功提示 */}
+      <AnimatePresence>
+        {showSuccess && (
+          <motion.div
+            initial={{ opacity: 0, y: -50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -50 }}
+            className="fixed top-20 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50"
+          >
+            訊息傳送成功！
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
