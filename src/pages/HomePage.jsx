@@ -9,6 +9,7 @@ import FavoriteRoundedIcon from '@mui/icons-material/FavoriteRounded';
 import FavoriteBorderRoundedIcon from '@mui/icons-material/FavoriteBorderRounded';
 import { useAuth } from '../contexts/AuthContext';
 import PostInteractionButtons from '../components/Post/PostInteractionButtons';
+import ScrollToTopButton from '../components/ScrollToTopButton';
 
 // localStorage 的 key
 const USER_KEY = 'social:user';
@@ -427,29 +428,7 @@ function HomePage() {
           />
         </div>
       )}
-      {/* 回到頂部按鈕 */}
-      <motion.div
-        // 初始狀態：完全透明
-        initial={{ opacity: 0 }}
-        // 動畫狀態：完全不透明
-        animate={{ opacity: 1 }}
-        // 動畫持續時間：0.3秒
-        transition={{ duration: 0.3 }}
-        // 固定在右下角，確保在其他元素之上
-        className="fixed bottom-6 right-6"
-      >
-        <button
-          // 點擊時觸發回到頂部函數
-          onClick={scrollToTop}
-          // 按鈕樣式：漸變背景、圓形、陰影效果、過渡動畫等
-          className="bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-full p-3 shadow-lg hover:shadow-xl transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
-        >
-          {/* 向上箭頭SVG圖標 */}
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
-          </svg>
-        </button>
-      </motion.div>
+      <ScrollToTopButton />
       {/* 成功提示 */}
       <AnimatePresence>
         {showSuccess && (
