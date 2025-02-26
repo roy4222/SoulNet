@@ -6,15 +6,14 @@ import { db, auth, storage } from '../utils/firebase';
 import { doc, getDoc, updateDoc, setDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { updateProfile } from 'firebase/auth';
-import { Avatar, Button, TextField, IconButton, CircularProgress, Card, CardContent, Typography, Grid, Divider, Tabs, Tab } from '@mui/material';
-import SaveIcon from '@mui/icons-material/Save';
-import CancelIcon from '@mui/icons-material/Cancel';
-import ImageIcon from '@mui/icons-material/Image';
-import RepeatIcon from '@mui/icons-material/Repeat';
-import { formatDistanceToNow } from 'date-fns';
-import { zhTW } from 'date-fns/locale';
 import { PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { r2Client } from '../utils/firebase';
+
+// 引入自定義組件
+import ProfileHeader from '../components/Profile/ProfileHeader';
+import ProfileTabs from '../components/Profile/ProfileTabs';
+import ProfilePostsList from '../components/Profile/ProfilePostsList';
+import LoadingState from '../components/UI/LoadingState';
 
 // 預設頭像
 const DEFAULT_AVATAR = 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSCvBNjFR_6BVhW3lFNwF0oEk2N8JXjeiaSqg&s';
@@ -262,24 +261,6 @@ function Profile() {
         setActiveTab(newValue);
     };
 
-    // 如果正在載入，顯示載入中的畫面
-    if (isLoading) {
-        return (
-            <div className="flex h-screen items-center justify-center">
-                <CircularProgress />
-            </div>
-        );
-    }
-
-    // 如果有錯誤，顯示錯誤訊息
-    if (error) {
-        return (
-            <div className="flex h-screen items-center justify-center">
-                <Typography color="error">{error}</Typography>
-            </div>
-        );
-    }
-
     // 渲染主要的個人檔案頁面
     return (
         <motion.div
@@ -288,333 +269,43 @@ function Profile() {
             exit={{ opacity: 0, y: -20 }}
             className="container mx-auto px-4 py-8 max-w-4xl"
         >
-            <Card className="mb-8 shadow-xl rounded-2xl overflow-hidden bg-white dark:bg-gray-800">
-                <CardContent className="p-8">
-                    <div className="flex flex-col items-center md:flex-row md:items-start md:space-x-12">
-                        {/* 頭像部分 */}
-                        <div className="relative group mb-6 md:mb-0">
-                            <div className="rounded-full overflow-hidden shadow-2xl border-4 border-white dark:border-gray-700">
-                                <Avatar
-                                    src={isEditing && imagePreview ? imagePreview : (user?.photoURL || DEFAULT_AVATAR)}
-                                    alt={user?.displayName}
-                                    sx={{ 
-                                        width: 180, 
-                                        height: 180,
-                                        transition: 'transform 0.3s ease-in-out',
-                                        '&:hover': {
-                                            transform: 'scale(1.05)'
-                                        }
-                                    }}
-                                />
-                            </div>
-                            {/* 編輯模式下顯示頭像上傳選項 */}
-                            {isEditing && (
-                                <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-full">
-                                    {/* 隱藏的文件輸入框 */}
-                                    <input
-                                        type="file"
-                                        accept="image/*"
-                                        id="avatar-upload"
-                                        className="hidden"
-                                        onChange={handleAvatarChange}
-                                    />
-                                    {/* 自定義的上傳按鈕 */}
-                                    <label htmlFor="avatar-upload" className="cursor-pointer transform transition-transform duration-200 hover:scale-110">
-                                        <IconButton 
-                                            component="span" 
-                                            className="bg-white/90 hover:bg-white"
-                                            sx={{
-                                                padding: '12px',
-                                                '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.95)' }
-                                            }}
-                                        >
-                                            <ImageIcon />
-                                        </IconButton>
-                                    </label>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* 用戶資料部分 */}
-                        <div className="flex-1 w-full max-w-xl">
-                            {isEditing ? (
-                                <div className="space-y-6">
-                                    <input
-                                        type="text"
-                                        placeholder="顯示名稱"
-                                        value={editForm.displayName}
-                                        onChange={(e) => setEditForm(prev => ({ ...prev, displayName: e.target.value }))}
-                                        className="w-full px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm hover:border-blue-500 dark:hover:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 text-gray-900 dark:text-gray-100 placeholder-gray-600 dark:placeholder-gray-400"
-                                    />
-                                    <textarea
-                                        rows="4"
-                                        placeholder="個人簡介"
-                                        value={editForm.bio}
-                                        onChange={(e) => setEditForm(prev => ({ ...prev, bio: e.target.value }))}
-                                        className="w-full px-4 py-2 mt-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm hover:border-blue-500 dark:hover:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 text-gray-900 dark:text-gray-100 placeholder-gray-600 dark:placeholder-gray-400 resize-none"
-                                    ></textarea>
-                                    <div className="flex space-x-4 justify-end mt-6">
-                                        <Button
-                                            variant="contained"
-                                            startIcon={<SaveIcon />}
-                                            onClick={handleSubmit}
-                                            disabled={isLoading}
-                                            className="!bg-gradient-to-r from-blue-500 to-blue-600 hover:!from-blue-600 hover:!to-blue-700 !text-white !rounded-full !px-6 !py-2 !text-sm !font-medium !shadow-lg !transition-all !duration-300 !ease-in-out !transform hover:!scale-105"
-                                        >
-                                            儲存變更
-                                        </Button>
-                                        <Button
-                                            variant="outlined"
-                                            startIcon={<CancelIcon />}
-                                            onClick={handleCancel}
-                                            disabled={isLoading}
-                                            className="!bg-transparent !text-gray-700 !border-2 !border-gray-300 hover:!bg-gray-100 dark:!text-gray-200 dark:!border-gray-600 dark:hover:!bg-gray-700 !rounded-full !px-6 !py-2 !text-sm !font-medium !shadow-md !transition-all !duration-300 !ease-in-out !transform hover:!scale-105"
-                                        >
-                                            取消編輯
-                                        </Button>
-                                    </div>
-                                </div>
-                            ) : (
-                                <div>
-                                    {/* 用戶資訊區塊 */}
-                                    <div className="flex items-center justify-between mb-6">
-                                        <div>
-                                            {/* 顯示用戶名稱 */}
-                                            <Typography 
-                                                variant="h4" 
-                                                component="h1" 
-                                                className="font-bold text-gray-800 dark:text-white mb-2"
-                                                sx={{ fontSize: '2.25rem' }}
-                                            >
-                                                {user?.displayName || '未設定名稱'}
-                                            </Typography>
-                                            {/* 顯示用戶電子郵件 */}
-                                            <Typography 
-                                                variant="body1" 
-                                                className="text-gray-500 dark:text-gray-400"
-                                            >
-                                                {user?.email}
-                                            </Typography>
-                                        </div>
-                                        {/* 編輯按鈕 */}
-                                        <IconButton 
-                                            onClick={() => setIsEditing(true)}
-                                            className="bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600"
-                                            sx={{ 
-                                                padding: '12px',
-                                                transition: 'all 0.2s ease-in-out',
-                                                '&:hover': { transform: 'scale(1.1)' }
-                                            }}
-                                        >
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" className="text-gray-900 dark:text-white">
-                                                <g fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2">
-                                                    <path strokeDasharray="20" strokeDashoffset="20" d="M3 21h18">
-                                                        <animate fill="freeze" attributeName="stroke-dashoffset" dur="0.2s" values="20;0"/>
-                                                    </path>
-                                                    <path strokeDasharray="48" strokeDashoffset="48" d="M7 17v-4l10 -10l4 4l-10 10h-4">
-                                                        <animate fill="freeze" attributeName="stroke-dashoffset" begin="0.2s" dur="0.6s" values="48;0"/>
-                                                    </path>
-                                                    <path strokeDasharray="8" strokeDashoffset="8" d="M14 6l4 4">
-                                                        <animate fill="freeze" attributeName="stroke-dashoffset" begin="0.8s" dur="0.2s" values="8;0"/>
-                                                    </path>
-                                                </g>
-                                            </svg>
-                                        </IconButton>
-                                    </div>
-                                    {/* 用戶簡介區塊 */}
-                                    <div className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-6">
-                                        <Typography 
-                                            variant="body1" 
-                                            className="text-gray-700 dark:text-gray-300 leading-relaxed"
-                                        >
-                                            {user?.bio || '還沒有個人簡介'}
-                                        </Typography>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
-
-            <Divider className="my-12" />
-
-            {/* 文章分頁 */}
-            <Tabs 
-                value={activeTab} 
-                onChange={handleTabChange}
-                className="mb-8"
-                sx={{
-                    '& .MuiTabs-indicator': {
-                        backgroundColor: 'rgb(59, 130, 246)',
-                    },
-                    '& .MuiTab-root': {
-                        fontSize: '1.25rem',
-                        fontWeight: 600,
-                        textTransform: 'none',
-                        letterSpacing: '0.5px',
-                        color: 'rgb(107, 114, 128)',
-                        '&.Mui-selected': {
-                            color: 'rgb(59, 130, 246)',
-                        },
-                    },
-                }}
-            >
-                <Tab 
-                    label={`我的文章 (${posts.length})`}
-                    sx={{ fontSize: '1.25rem !important' }}
-                />
-                <Tab 
-                    label={`轉發文章 (${reposts.length})`}
-                    sx={{ fontSize: '1.25rem !important' }}
-                />
-            </Tabs>
-
-            <Grid container spacing={4}>
-                {activeTab === 0 ? (
-                    // 原創文章列表
-                    posts.length > 0 ? (
-                        posts.map(post => (
-                            <Grid item xs={12} sm={6} md={4} key={post.id}>
-                                <motion.div
-                                    whileHover={{ scale: 1.05, y: -5 }}
-                                    whileTap={{ scale: 0.98 }}
-                                    transition={{ type: "spring", stiffness: 400, damping: 10 }}
-                                >
-                                    <Card
-                                        className="h-full cursor-pointer hover:shadow-xl transition-all duration-300"
-                                        sx={{ 
-                                            borderRadius: '20px', 
-                                            height: '100%', 
-                                            background: 'linear-gradient(145deg, #ffffff, #f0f0f0)',
-                                            boxShadow: '5px 5px 15px #d1d1d1, -5px -5px 15px #ffffff'
-                                        }}
-                                        onClick={() => navigate(`/post/${post.id}`)}
-                                    >
-                                        <CardContent className="p-6">
-                                            <Typography 
-                                                variant="h6" 
-                                                noWrap 
-                                                className="font-bold text-gray-800 dark:text-white mb-3"
-                                                sx={{ fontSize: '1.25rem', fontWeight: 700 }}
-                                            >
-                                                {post.title}
-                                            </Typography>
-                                            <Typography 
-                                                variant="body2" 
-                                                className="text-gray-500 dark:text-gray-400 mb-3"
-                                                sx={{ fontSize: '0.875rem', fontStyle: 'italic' }}
-                                            >
-                                                {formatDistanceToNow(post.createdAt?.toDate(), { addSuffix: true, locale: zhTW })}
-                                            </Typography>
-                                            <Typography 
-                                                variant="body2" 
-                                                className="text-gray-600 dark:text-gray-300 line-clamp-3"
-                                                sx={{ fontSize: '1rem', lineHeight: 1.6 }}
-                                            >
-                                                {post.content}
-                                            </Typography>
-                                        </CardContent>
-                                    </Card>
-                                </motion.div>
-                            </Grid>
-                        ))
-                    ) : (
-                        <Grid item xs={12}>
-                            <Typography 
-                                variant="body1" 
-                                align="center" 
-                                className="text-gray-500 dark:text-gray-400 py-12"
-                                sx={{ fontSize: '1.1rem', fontStyle: 'italic' }}
-                            >
-                                還沒有發表過文章，開始創作吧！
-                            </Typography>
-                        </Grid>
-                    )
-                ) : (
-                    // 轉發文章列表
-                    reposts.length > 0 ? (
-                        reposts.map(post => (
-                            <Grid item xs={12} sm={6} md={4} key={post.id}>
-                                <motion.div
-                                    whileHover={{ scale: 1.05, y: -5 }}
-                                    whileTap={{ scale: 0.98 }}
-                                    transition={{ type: "spring", stiffness: 400, damping: 10 }}
-                                >
-                                    <Card
-                                        className="h-full cursor-pointer hover:shadow-xl transition-all duration-300"
-                                        sx={{ 
-                                            borderRadius: '20px', 
-                                            height: '100%', 
-                                            background: 'linear-gradient(145deg, #ffffff, #f0f0f0)',
-                                            boxShadow: '5px 5px 15px #d1d1d1, -5px -5px 15px #ffffff'
-                                        }}
-                                        onClick={() => navigate(`/post/${post.originalPostId || post.id}`)}
-                                    >
-                                        <CardContent className="p-6">
-                                            <div className="flex items-center mb-3">
-                                                <RepeatIcon 
-                                                    className="mr-2 text-blue-500"
-                                                    sx={{ fontSize: '1.25rem' }}
-                                                />
-                                                <Typography 
-                                                    variant="body2"
-                                                    className="text-blue-500"
-                                                    sx={{ fontSize: '0.875rem' }}
-                                                >
-                                                    已轉發
-                                                </Typography>
-                                            </div>
-                                            <Typography 
-                                                variant="h6" 
-                                                noWrap 
-                                                className="font-bold text-gray-800 dark:text-white mb-3"
-                                                sx={{ fontSize: '1.25rem', fontWeight: 700 }}
-                                            >
-                                                {post.title}
-                                            </Typography>
-                                            <Typography 
-                                                variant="body2" 
-                                                className="text-gray-500 dark:text-gray-400 mb-3"
-                                                sx={{ fontSize: '0.875rem', fontStyle: 'italic' }}
-                                            >
-                                                {formatDistanceToNow(post.createdAt?.toDate(), { addSuffix: true, locale: zhTW })}
-                                            </Typography>
-                                            <Typography 
-                                                variant="body2" 
-                                                className="text-gray-600 dark:text-gray-300 line-clamp-3"
-                                                sx={{ fontSize: '1rem', lineHeight: 1.6 }}
-                                            >
-                                                {post.content}
-                                            </Typography>
-                                            {post.originalAuthor && (
-                                                <Typography 
-                                                    variant="body2" 
-                                                    className="mt-3 text-gray-500 dark:text-gray-400"
-                                                    sx={{ fontSize: '0.875rem' }}
-                                                >
-                                                    原作者：{post.originalAuthor}
-                                                </Typography>
-                                            )}
-                                        </CardContent>
-                                    </Card>
-                                </motion.div>
-                            </Grid>
-                        ))
-                    ) : (
-                        <Grid item xs={12}>
-                            <Typography 
-                                variant="body1" 
-                                align="center" 
-                                className="text-gray-500 dark:text-gray-400 py-12"
-                                sx={{ fontSize: '1.1rem', fontStyle: 'italic' }}
-                            >
-                                還沒有轉發過文章
-                            </Typography>
-                        </Grid>
-                    )
-                )}
-            </Grid>
+            {/* 載入狀態或錯誤訊息 */}
+            <LoadingState isLoading={isLoading} error={error} />
+            
+            {/* 只有當不是載入中且沒有錯誤時才顯示內容 */}
+            {!isLoading && !error && (
+                <>
+                    {/* 個人資料頭部 */}
+                    <ProfileHeader 
+                        user={user}
+                        isEditing={isEditing}
+                        imagePreview={imagePreview}
+                        editForm={editForm}
+                        isLoading={isLoading}
+                        setEditForm={setEditForm}
+                        setIsEditing={setIsEditing}
+                        handleSubmit={handleSubmit}
+                        handleAvatarChange={handleAvatarChange}
+                        handleCancel={handleCancel}
+                    />
+                    
+                    {/* 分頁選項 */}
+                    <ProfileTabs 
+                        activeTab={activeTab}
+                        handleTabChange={handleTabChange}
+                        postsCount={posts.length}
+                        repostsCount={reposts.length}
+                    />
+                    
+                    {/* 文章列表 */}
+                    <ProfilePostsList 
+                        posts={posts}
+                        reposts={reposts}
+                        activeTab={activeTab}
+                        navigate={navigate}
+                    />
+                </>
+            )}
         </motion.div>
     );
 }

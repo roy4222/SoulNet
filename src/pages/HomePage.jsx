@@ -13,8 +13,6 @@ import CategorySidebar from '../components/Category/CategorySidebar';
 
 // localStorage 的 key
 const USER_KEY = 'social:user';
-// 默認頭像
-const DEFAULT_AVATAR = 'https://pub-6ee61ab59e054c0facbe8351ca1efce0.r2.dev/default-avatar.png';
 
 // 定義HomePage組件
 function HomePage() {
@@ -256,6 +254,7 @@ function HomePage() {
             {/* 文章列表區域 */}
             <div className="grid gap-4 sm:gap-6">
               {isLoadingPosts ? (
+                // 加載中顯示旋轉動畫
                 <div className="flex justify-center">
                   <svg className="animate-spin h-5 w-5 text-gray-500 dark:text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -263,6 +262,7 @@ function HomePage() {
                   </svg>
                 </div>
               ) : (
+                // 渲染過濾後的文章列表
                 filteredPosts.map(post => (
                   <PostCard
                     key={post.id}
@@ -286,6 +286,7 @@ function HomePage() {
           </div>
         </div>
       </div>
+      {/* 圖片模態框組件 */}
       <ImageModal 
         isOpen={isImageModalOpen}
         imageUrl={selectedImage}
@@ -294,7 +295,9 @@ function HomePage() {
           setSelectedImage(null);
         }}
       />
+      {/* 回到頂部按鈕組件 */}
       <ScrollToTopButton />
+      {/* 成功提示組件 */}
       <SuccessToast show={showSuccess} />
     </div>
   );
