@@ -2,11 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { db } from '../utils/firebase';
 import { collection, getDocs, doc, getDoc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
-import { Fab } from '@mui/material';
-import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
-import { Link, useNavigate } from 'react-router-dom';
-import FavoriteRoundedIcon from '@mui/icons-material/FavoriteRounded';
-import FavoriteBorderRoundedIcon from '@mui/icons-material/FavoriteBorderRounded';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import PostInteractionButtons from '../components/Post/PostInteractionButtons';
 import ScrollToTopButton from '../components/ScrollToTopButton';
@@ -217,14 +213,7 @@ function HomePage() {
     });
   };
 
-  // 導航到貼文最上方的函數
-  const navigateToPost = (postId) => {
-    // 將頁面滾動到頂部
-    window.scrollTo(0, 0);
-    // 使用 React Router 的 navigate 函數跳轉到指定的貼文頁面
-    navigate(`/post/${postId}`);
-  };
-
+ 
   const handleShare = async (post) => {
     try {
       await navigator.clipboard.writeText(`${window.location.origin}/post/${post.id}`);
