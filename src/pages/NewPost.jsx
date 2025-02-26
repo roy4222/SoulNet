@@ -7,6 +7,7 @@ import { getFirestore, collection, addDoc, getDocs, doc, getDoc, setDoc, serverT
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { v4 as uuidv4 } from 'uuid';
 import firebase, { r2Client } from '../utils/firebase';
+import ScrollToTopButton from '../components/ScrollToTopButton';
 
 // 獲取文件的ContentType
 const getContentType = (file) => {
@@ -338,6 +339,7 @@ export default function NewPost() {
                     </button>
                 </div>
             </form>
+            <ScrollToTopButton />
         </motion.div>
     );
 }

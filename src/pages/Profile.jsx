@@ -14,6 +14,7 @@ import ProfileHeader from '../components/Profile/ProfileHeader';
 import ProfileTabs from '../components/Profile/ProfileTabs';
 import ProfilePostsList from '../components/Profile/ProfilePostsList';
 import LoadingState from '../components/UI/LoadingState';
+import ScrollToTopButton from '../components/ScrollToTopButton';
 
 // 預設頭像
 const DEFAULT_AVATAR = 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSCvBNjFR_6BVhW3lFNwF0oEk2N8JXjeiaSqg&s';
@@ -306,6 +307,7 @@ function Profile() {
                     />
                 </>
             )}
+        <ScrollToTopButton />
         </motion.div>
     );
 }

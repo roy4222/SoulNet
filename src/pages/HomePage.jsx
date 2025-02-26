@@ -203,15 +203,6 @@ function HomePage() {
     return post.category === selectedCategory || post.topic === selectedCategory;
   });
 
-  // 回到頂部函數
-  const scrollToTop = () => {
-    window.scrollTo({  //是瀏覽器內建的滾動方法，用來控制頁面的滾動位置
-      top: 0,
-      behavior: 'smooth'
-    });
-  };
-
- 
   const handleShare = async (post) => {
     try {
       await navigator.clipboard.writeText(`${window.location.origin}/post/${post.id}`);
@@ -231,7 +222,6 @@ function HomePage() {
             isLoading={isLoading}
             selectedCategory={selectedCategory}
             onCategorySelect={setSelectedCategory}
-            onScrollToTop={scrollToTop}
           />
 
           {/* 右側內容區 - 添加左側 margin 以避免被固定導航遮擋 */}

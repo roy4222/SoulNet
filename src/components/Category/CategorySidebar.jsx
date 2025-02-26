@@ -5,9 +5,16 @@ function CategorySidebar({
   categories, 
   isLoading, 
   selectedCategory, 
-  onCategorySelect,
-  onScrollToTop 
+  onCategorySelect
 }) {
+  // 回到頂部函數
+  const scrollToTop = () => {
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -39,7 +46,7 @@ function CategorySidebar({
               key={category.id}
               onClick={() => {
                 onCategorySelect(category.id);
-                onScrollToTop();
+                scrollToTop();
               }}
               className={`px-4 py-2 rounded-lg text-left transition-all whitespace-nowrap lg:whitespace-normal flex-shrink-0 lg:flex-shrink ${
                 selectedCategory === category.id
@@ -56,4 +63,4 @@ function CategorySidebar({
   );
 }
 
-export default CategorySidebar; 
+export default CategorySidebar;

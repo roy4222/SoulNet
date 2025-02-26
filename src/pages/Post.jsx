@@ -18,6 +18,7 @@ import LoadingState from '../components/UI/LoadingState';
 import ImageModal from '../components/UI/ImageModal';
 import SuccessMessage from '../components/UI/SuccessMessage';
 import BackButton from '../components/UI/BackButton';
+import ScrollToTopButton from '../components/ScrollToTopButton';
 
 // 定義 Post 組件
 function Post() {
@@ -374,6 +375,7 @@ function Post() {
         {/* 使用 SuccessMessage 組件 */}
         <SuccessMessage show={showSuccess} message="訊息傳送成功！" />
       </div>
+      <ScrollToTopButton />
     </motion.div>
   );
 }
