@@ -6,8 +6,8 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import PostInteractionButtons from '../components/Post/PostInteractionButtons';
 import ScrollToTopButton from '../components/ScrollToTopButton';
-import ImageModal from '../components/ImageModal';
-import SuccessToast from '../components/Toast/SuccessToast';
+import ImageModal from '../components/UI/ImageModal';
+import SuccessMessage from '../components/UI/SuccessMessage';
 import PostCard from '../components/Post/PostCard';
 import CategorySidebar from '../components/Category/CategorySidebar';
 
@@ -298,7 +298,7 @@ function HomePage() {
       {/* 回到頂部按鈕組件 */}
       <ScrollToTopButton />
       {/* 成功提示組件 */}
-      <SuccessToast show={showSuccess} />
+      <SuccessMessage show={showSuccess} />
     </div>
   );
 };

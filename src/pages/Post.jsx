@@ -4,15 +4,20 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { db } from '../utils/firebase';
 import { doc, getDoc, updateDoc, arrayUnion, arrayRemove, Timestamp, collection, addDoc } from 'firebase/firestore';
-import {TextField, Button } from '@mui/material';
-import FavoriteRoundedIcon from '@mui/icons-material/FavoriteRounded';
-import FavoriteBorderRoundedIcon from '@mui/icons-material/FavoriteBorderRounded';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { useAuth } from '../contexts/AuthContext';
 import { formatDistanceToNow } from 'date-fns';
 import { zhTW } from 'date-fns/locale';
 
-
+// 引入自定義組件
+import PostHeader from '../components/Post/PostHeader';
+import PostContent from '../components/Post/PostContent';
+import PostCommentForm from '../components/Post/PostCommentForm';
+import PostCommentsList from '../components/Post/PostCommentsList';
+import PostInteractionButtons from '../components/Post/PostInteractionButtons';
+import LoadingState from '../components/UI/LoadingState';
+import ImageModal from '../components/UI/ImageModal';
+import SuccessMessage from '../components/UI/SuccessMessage';
+import BackButton from '../components/UI/BackButton';
 
 // 定義 Post 組件
 function Post() {
@@ -282,30 +287,9 @@ function Post() {
     }
   };
 
-  // 顯示加載中的狀態
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-      </div>
-    );
-  }
-
-  // 顯示錯誤信息
-  if (error) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-4">{error}</h2>
-          <button
-            onClick={() => navigate(-1)}
-            className="text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300"
-          >
-            返回上一頁
-          </button>
-        </div>
-      </div>
-    );
+  // 使用 LoadingState 組件顯示加載中或錯誤狀態
+  if (isLoading || error) {
+    return <LoadingState isLoading={isLoading} error={error} />;
   }
 
   // 如果沒有文章數據，返回 null
@@ -321,15 +305,8 @@ function Post() {
     >
       <div className="max-w-4xl mx-auto px-4">
         {/* 返回按鈕 */}
-        <motion.button
-          onClick={() => navigate(-1)}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          className="mb-4 p-2 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 shadow-md hover:shadow-lg transition-all duration-300"
-        >
-          <ArrowBackIcon className="w-5 h-5" />
-        </motion.button>
-
+        <BackButton navigate={navigate} />
+        
         {/* 文章內容 */}
         <motion.article
           initial={{ y: 20, opacity: 0 }}
@@ -337,291 +314,66 @@ function Post() {
           transition={{ duration: 0.3 }}
           className="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-xl shadow-md mb-6"
         >
-          {/* 文章標題和作者資訊 */}
-          <div className="flex items-center gap-3 mb-4">
-            <img 
-              src={post.author?.photoURL || DEFAULT_AVATAR}  
-              alt={post.author?.displayName || '使用者'}
-              className="w-10 h-10 rounded-full object-cover"
-            />
-            <div>
-              <h3 className="font-medium text-gray-900 dark:text-white">
-                {post.author?.displayName || '使用者'}
-              </h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                {post.createdAt?.toDate().toLocaleString('zh-TW', {
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric',
-                  hour: '2-digit',
-                  minute: '2-digit'
-                })}
-              </p>
-            </div>
-          </div>
+          {/* 使用 PostHeader 組件 */}
+          <PostHeader post={post} />
 
-          {/* 文章標題 */}
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-4">
-            {post.title}
-          </h1>
+          {/* 使用 PostContent 組件 */}
+          <PostContent 
+            post={post} 
+            onImageClick={(imageUrl) => {
+              setSelectedImage(imageUrl);
+              setIsImageModalOpen(true);
+            }} 
+          />
 
-          {/* 文章內容 */}
-          <div className="prose dark:prose-invert max-w-none mb-6">
-            <pre className="whitespace-pre-wrap font-sans text-gray-700 dark:text-gray-300">
-              {post.content}
-            </pre>
-          </div>
-
-          {/* 文章圖片 */}
-          {post.imageUrl && (
-            <div className="mb-6">
-              <img
-                src={post.imageUrl}
-                alt="文章圖片"
-                className="w-full h-auto rounded-lg cursor-pointer"
-                onClick={() => {
-                  setSelectedImage(post.imageUrl);
-                  setIsImageModalOpen(true);
-                }}
-              />
-            </div>
-          )}
-
-          {/* 互動按鈕區域 */}
-          <div className="flex items-center gap-4 text-gray-500 dark:text-gray-400">
-            {/* 點讚按鈕 */}
-            <button 
-              onClick={handleLike}
-              className="flex items-center gap-2 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-all duration-200 group relative"
-            >
-              {post.likes?.includes(currentUser?.uid) 
-                ? <FavoriteRoundedIcon className="w-6 h-6 text-red-500" />
-                : <FavoriteBorderRoundedIcon className="w-6 h-6 group-hover:text-red-500" />
-              }
-              <span className="text-sm font-medium">{post.likes?.length || 0}</span>
-              {/* 滑鼠懸停時顯示的提示文字 */}
-              <span className="invisible group-hover:visible absolute bottom-full mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded whitespace-nowrap">點讚</span>
-            </button>
-
-            {/* 評論按鈕 */}
-            <button 
-              onClick={() => {
-                document.getElementById('comments')?.scrollIntoView({ behavior: 'smooth' });
-              }}
-              className="flex items-center gap-2 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-all duration-200 group relative"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" className="group-hover:text-blue-500">
-                <path fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 21a9 9 0 1 0-9-9c0 1.488.36 2.891 1 4.127L3 21l4.873-1c1.236.64 2.64 1 4.127 1"/>
-              </svg>
-              <span className="text-sm font-medium">{post.comments?.length || 0}</span>
-              {/* 滑鼠懸停時顯示的提示文字 */}
-              <span className="invisible group-hover:visible absolute bottom-full mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded whitespace-nowrap">評論</span>
-            </button>
-
-            {/* 轉發按鈕 */}
-            <button 
-              onClick={handleRepost}
-              className="flex items-center gap-2 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-all duration-200 group relative"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 21 21" className="group-hover:text-green-500">
-                <g fill="none" fillRule="evenodd" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="m13.5 13.5l3 3l3-3"/>
-                  <path d="M9.5 4.5h3a4 4 0 0 1 4 4v8m-9-9l-3-3l-3 3"/>
-                  <path d="M11.5 16.5h-3a4 4 0 0 1-4-4v-8"/>
-                </g>
-              </svg>
-              <span className="text-sm font-medium">{post.reposts?.length || 0}</span>
-               {/* 滑鼠懸停時顯示的提示文字 */}
-               <span className="invisible group-hover:visible absolute bottom-full mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded whitespace-nowrap">轉發</span>
-            </button>
-            {/* 分享按鈕 */}
-            <button 
-              onClick={handleShare}
-              className="flex items-center gap-2 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-all duration-200 group relative"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" className="group-hover:text-blue-500">
-                <path fill="currentColor" d="M13 14h-2a9 9 0 0 0-7.968 4.81A10 10 0 0 1 3 18C3 12.477 7.477 8 13 8V3l10 8l-10 8z"/>
-              </svg>
-              <span className="text-sm font-medium">{post.shares || 0}</span>
-               {/* 滑鼠懸停時顯示的提示文字 */}
-               <span className="invisible group-hover:visible absolute bottom-full mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded whitespace-nowrap">分享</span>
-            </button>
-
-            {/* 觀看次數 */}
-            <div className="flex items-center gap-2 p-2 group relative">
-              <svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 24 24" className="text-gray-500 dark:text-gray-400 w-5 h-5">
-                <path fill="none" stroke="currentColor" stroke-width="2" d="M16 5a4 4 0 1 1-8 0a4 4 0 0 1 8 0Zm-1 18v-6h3v-2c0-3.34-2.76-5.97-6-6c-3.21.03-6 2.66-6 6v2h3v6m-5.5 0h17z"/>
-              </svg>
-              <span className="text-sm font-medium text-gray-500 dark:text-gray-400">{post.views || 0}</span>
-               {/* 滑鼠懸停時顯示的提示文字 */}
-               <span className="invisible group-hover:visible absolute bottom-full mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded whitespace-nowrap">查看次數</span>
-            </div>
-          </div>
+          {/* 使用 PostInteractionButtons 組件 */}
+          <PostInteractionButtons 
+            post={post}
+            currentUser={currentUser}
+            onLike={handleLike}
+            navigate={navigate}
+            onShare={handleShare}
+            onRepost={handleRepost}
+          />
         </motion.article>
         
-
         {/* 評論區塊 */}
         <motion.section
-          initial={{ y: 20, opacity: 0 }}  // 初始狀態：向下偏移20px，完全透明
-          animate={{ y: 0, opacity: 1 }}   // 動畫結束狀態：回到原位，完全不透明
-          transition={{ duration: 0.3, delay: 0.2 }}  // 動畫持續0.3秒，延遲0.2秒開始
-          className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md"  // 樣式：白色背景（深色模式為深灰），內邊距，圓角，陰影
-          id="comments"  // 用於定位的ID
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.3, delay: 0.2 }}
+          className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md"
+          id="comments"
         >
-          {/* 評論數量標題 */}
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-8">
-            評論 ({post.comments?.length || 0})  {/* 顯示評論數量，如果沒有評論則顯示0 */}
-          </h2>
+          {/* 使用 PostCommentForm 組件 */}
+          <PostCommentForm 
+            comment={comment}
+            setComment={setComment}
+            handleComment={handleComment}
+          />
 
-          {/* 評論輸入表單 */}
-          <form onSubmit={handleComment} className="mb-10">
-            {/* 多行文本輸入框 */}
-            <TextField
-              multiline  // 允許多行輸入
-              rows={4}  // 設置4行高度
-              fullWidth  // 佔滿整個寬度
-              value={comment}  // 綁定評論內容
-              onChange={(e) => setComment(e.target.value)}  // 更新評論內容
-              placeholder="分享你的想法..."  // 佔位符文本
-              className="mb-6 bg-white dark:bg-gray-700"  // 樣式：下邊距，背景色
-              InputProps={{
-                className: 'dark:text-white rounded-lg',  // 深色模式文字顏色，圓角
-              }}
-            />
-            {/* 按鈕容器 */}
-            <div className="flex justify-end space-x-4 mt-4">
-              {/* 取消按鈕 */}
-              <Button 
-                type="button" 
-                variant="outlined"
-                onClick={() => setComment('')}  // 點擊時清空評論
-                className="px-6 py-2 rounded-full text-gray-600 border-gray-300 hover:bg-gray-100 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-800"
-              >
-                取消
-              </Button>
-              {/* 發表評論按鈕 */}
-              <Button 
-                type="submit" 
-                variant="contained" 
-                disabled={!comment}  // 當評論為空時禁用按鈕
-                className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 dark:from-indigo-600 dark:to-purple-700 dark:hover:from-indigo-700 dark:hover:to-purple-800 text-white font-semibold px-8 py-2 rounded-full shadow-md hover:shadow-lg transition duration-300 ease-in-out transform hover:-translate-y-1 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <span className="flex items-center text-white">
-                  {/* 發送圖標 */}
-                  <svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 24 24" className="h-5 w-5 mr-2 text-white"><g fill="none"><path d="m12.593 23.258l-.011.002l-.071.035l-.02.004l-.014-.004l-.071-.035q-.016-.005-.024.005l-.004.01l-.017.428l.005.02l.01.013l.104.074l.015.004l.012-.004l.104-.074l.012-.016l.004-.017l-.017-.427q-.004-.016-.017-.018m.265-.113l-.013.002l-.185.093l-.01.01l-.003.011l.018.43l.005.012l.008.007l.201.093q.019.005.029-.008l.004-.014l-.034-.614q-.005-.018-.02-.022m-.715.002a.02.02 0 0 0-.027.006l-.006.014l-.034.614q.001.018.017.024l.015-.002l.201-.093l.01-.008l.004-.011l.017-.43l-.003-.012l-.01-.01z"/><path fill="currentColor" d="M20.25 3.532a1 3.5 0 0 1 1.183 1.329l-6 15.5a1 3.5 0 0 1-1.624.362l-3.382-3.235l-1.203 1.202c-.636.636-1.724.186-1.724-.714v-3.288L2.309 9.723a1 3.5 0 0 1 .442-1.691l17.5-4.5Zm-2.114 4.305l-7.998 6.607l3.97 3.798zm-1.578-1.29L4.991 9.52l3.692 3.53l7.875-6.505Z"/></g></svg>
-                  發表評論
-                </span>
-              </Button>
-            </div>
-          </form>
-
-          {/* 評論列表 */}
-          {/* 排序按鈕 */}
-          <div className="flex justify-start mb-4 space-x-2">
-            {/* 最新留言按鈕 */}
-            <button
-              onClick={() => setSortOrder('newest')}
-              className={`px-4 py-2 rounded-full text-sm ${
-                sortOrder === 'newest'
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
-              } transition-colors duration-200`}
-            >
-              最新留言
-            </button>
-            {/* 最舊留言按鈕 */}
-            <button
-              onClick={() => setSortOrder('oldest')}
-              className={`px-4 py-2 rounded-full text-sm ${
-                sortOrder === 'oldest'
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
-              } transition-colors duration-200`}
-            >
-              最舊留言
-            </button>
-          </div>
-
-          {/* 評論列表容器 */}
-          <div className="space-y-8">
-            {/* 對評論進行排序和渲染 */}
-            {[...(post.comments || [])]
-              // 根據 sortOrder 對評論進行排序
-              .sort((a, b) => {
-                // 獲取評論的創建時間
-                const timeA = a.createdAt?.toDate().getTime();
-                const timeB = b.createdAt?.toDate().getTime();
-                // 根據 sortOrder 決定排序方式
-                return sortOrder === 'newest' ? timeB - timeA : timeA - timeB;
-              })
-              // 遍歷排序後的評論數組
-              .map((comment, index) => (
-              // 使用 motion.div 創建動畫效果的評論項目
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 20 }}  // 初始狀態：透明度為0，向下偏移20px
-                animate={{ opacity: 1, y: 0 }}   // 動畫結束狀態：完全不透明，回到原位
-                transition={{ duration: 0.3, delay: index * 0.1 }}  // 動畫持續0.3秒，每個評論延遲0.1秒
-                className="flex gap-4 items-start"
-              >
-                {/* 評論者頭像 */}
-                <img 
-                  src={comment.author?.photoURL || DEFAULT_AVATAR} 
-                  alt={comment.author?.displayName || '使用者'}
-                  className="w-12 h-12 rounded-full object-cover"
-                />
-                {/* 評論內容區塊 */}
-                <div className="flex-1 bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-                  {/* 評論者信息和發布時間 */}
-                  <div className="flex items-center gap-2 mb-2">
-                    {/* 顯示評論者名稱，如果沒有則顯示 '使用者' */}
-                    <span className="font-semibold text-gray-900 dark:text-white">
-                      {comment.author?.displayName || '使用者'}
-                    </span>
-                    {/* 顯示評論發布時間，格式化為相對時間 */}
-                    <span className="text-sm text-gray-500 dark:text-gray-400">
-                      {formatDistanceToNow(comment.createdAt?.toDate(), { addSuffix: true, locale: zhTW })}
-                    </span>
-                  </div>
-                  {/* 評論文字內容 */}
-                  <p className="text-gray-700 dark:text-gray-300 text-lg whitespace-pre-wrap">{comment.content}</p>
-                </div>
-              </motion.div>
-            ))}
-          </div>
+          {/* 使用 PostCommentsList 組件 */}
+          <PostCommentsList 
+            comments={post.comments}
+            sortOrder={sortOrder}
+            setSortOrder={setSortOrder}
+            formatTime={formatTime}
+          />
         </motion.section>
-      </div>
 
-      {/* 圖片放大 Modal */}
-      {isImageModalOpen && selectedImage && (
-        <div 
-          className="fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center cursor-pointer"
-          onClick={() => {
+        {/* 使用 ImageModal 組件 */}
+        <ImageModal 
+          isOpen={isImageModalOpen}
+          imageUrl={selectedImage}
+          onClose={() => {
             setIsImageModalOpen(false);
             setSelectedImage(null);
           }}
-        >
-          <img 
-            src={selectedImage} 
-            alt="放大圖片"
-            className="max-h-[90vh] max-w-[90vw] object-contain"
-            onClick={(e) => e.stopPropagation()}
-          />
-        </div>
-      )}
-      {/* 成功提示 */}
-      <AnimatePresence>
-        {showSuccess && (
-          <motion.div
-            initial={{ opacity: 0, y: -50 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -50 }}
-            className="fixed top-20 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50"
-          >
-            訊息傳送成功！
-          </motion.div>
-        )}
-      </AnimatePresence>
+        />
+
+        {/* 使用 SuccessMessage 組件 */}
+        <SuccessMessage show={showSuccess} message="訊息傳送成功！" />
+      </div>
     </motion.div>
   );
 }

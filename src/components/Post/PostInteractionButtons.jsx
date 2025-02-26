@@ -3,7 +3,7 @@ import FavoriteRoundedIcon from '@mui/icons-material/FavoriteRounded';
 import FavoriteBorderRoundedIcon from '@mui/icons-material/FavoriteBorderRounded';
 
 // PostInteractionButtons 組件：顯示貼文的互動按鈕（點讚、評論、轉發、分享）
-function PostInteractionButtons({ post, currentUser, onLike, navigate }) {
+function PostInteractionButtons({ post, currentUser, onLike, navigate, onShare, onRepost }) {
   return (
     <div 
       className="flex items-center gap-4 text-gray-500 dark:text-gray-400 interaction-buttons"
@@ -33,7 +33,11 @@ function PostInteractionButtons({ post, currentUser, onLike, navigate }) {
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
-          navigate(`/post/${post.id}#comments`); // 導航到貼文的評論區
+          if (window.location.pathname.includes('/post/')) {
+            document.getElementById('comments')?.scrollIntoView({ behavior: 'smooth' });
+          } else {
+            navigate(`/post/${post.id}#comments`); // 導航到貼文的評論區
+          }
         }}
         className="flex items-center gap-2 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-all duration-200 group relative"
       >
@@ -51,7 +55,7 @@ function PostInteractionButtons({ post, currentUser, onLike, navigate }) {
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
-          // 轉發功能待實現
+          if (onRepost) onRepost();
         }}
         className="flex items-center gap-2 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-all duration-200 group relative"
       >
@@ -73,7 +77,7 @@ function PostInteractionButtons({ post, currentUser, onLike, navigate }) {
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
-          onShare(post); // 調用分享函數
+          if (onShare) onShare();
         }}
         className="flex items-center gap-2 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-all duration-200 group relative"
       >
