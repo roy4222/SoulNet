@@ -11,6 +11,7 @@ import { useAuth } from '../contexts/AuthContext';
 import PostInteractionButtons from '../components/Post/PostInteractionButtons';
 import ScrollToTopButton from '../components/ScrollToTopButton';
 import ImageModal from '../components/ImageModal';
+import SuccessToast from '../components/Toast/SuccessToast';
 
 // localStorage 的 key
 const USER_KEY = 'social:user';
@@ -421,19 +422,7 @@ function HomePage() {
         }}
       />
       <ScrollToTopButton />
-      {/* 成功提示 */}
-      <AnimatePresence>
-        {showSuccess && (
-          <motion.div
-            initial={{ opacity: 0, y: -50 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -50 }}
-            className="fixed top-20 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50"
-          >
-            訊息傳送成功！
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <SuccessToast show={showSuccess} />
     </div>
   );
 };
