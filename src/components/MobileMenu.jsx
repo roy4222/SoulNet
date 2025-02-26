@@ -1,5 +1,5 @@
 // 引入必要的依賴
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ROUTES } from '../routes';
 
@@ -17,6 +17,8 @@ export default function MobileMenu({
     toggleTheme,  // 切換主題的函數
     menuRef  // 選單的 ref
 }) {
+    const navigate = useNavigate();
+
     return (
         <AnimatePresence>
             {isOpen && (
@@ -68,21 +70,30 @@ export default function MobileMenu({
                             {user ? (
                                 <>
                                     <div className="mb-6">
-                                        <div className="flex items-center space-x-3">
-                                            <img
-                                                src={user.photoURL || DEFAULT_AVATAR}
-                                                alt="用戶頭像"
-                                                className="w-12 h-12 rounded-full"
-                                            />
-                                            <div>
-                                                <p className="font-semibold text-gray-800 dark:text-gray-200">
-                                                    {user.displayName || '使用者'}
-                                                </p>
-                                                <p className="text-sm text-gray-500 dark:text-gray-400">
-                                                    {user.email}
-                                                </p>
+                                        <button
+                                            onClick={() => {
+                                                navigate('/profile');
+                                                onClose();  // 關閉選單的函數
+                                            }}
+                                            className="w-full text-left hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200"
+                                            aria-label="查看個人資料"
+                                        >
+                                            <div className="flex items-center space-x-3">
+                                                <img 
+                                                    src={user.photoURL || DEFAULT_AVATAR} 
+                                                    alt={user.displayName || '使用者'}
+                                                    className="w-12 h-12 rounded-full object-cover"
+                                                />
+                                                <div>
+                                                    <p className="font-semibold text-gray-800 dark:text-gray-200">
+                                                        {user.displayName || '使用者'}
+                                                    </p>
+                                                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                                                        {user.email}
+                                                    </p>
+                                                </div>
                                             </div>
-                                        </div>
+                                        </button>
                                     </div>
 
                                     {/* 發表文章按鈕 */}
@@ -169,16 +180,6 @@ export default function MobileMenu({
                             {/* 底部選項：僅在用戶登入時顯示登出按鈕 */}
                             {user && (
                                 <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700 space-y-2">
-                                    <Link
-                                        to="/profile"
-                                        onClick={onClose}
-                                        className="w-full flex items-center justify-center space-x-2 px-4 py-2 text-blue-600 dark:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors duration-200"
-                                    >
-                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                        </svg>
-                                        <span>個人資料</span>
-                                    </Link>
                                     <button
                                         onClick={() => {
                                             handleSignOut();

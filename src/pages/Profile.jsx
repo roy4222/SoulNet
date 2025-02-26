@@ -15,6 +15,7 @@ import ProfileTabs from '../components/Profile/ProfileTabs';
 import ProfilePostsList from '../components/Profile/ProfilePostsList';
 import LoadingState from '../components/UI/LoadingState';
 import ScrollToTopButton from '../components/ScrollToTopButton';
+import BackButton from '../components/UI/BackButton';
 
 // 預設頭像
 const DEFAULT_AVATAR = 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSCvBNjFR_6BVhW3lFNwF0oEk2N8JXjeiaSqg&s';
@@ -272,6 +273,9 @@ function Profile() {
         >
             {/* 載入狀態或錯誤訊息 */}
             <LoadingState isLoading={isLoading} error={error} />
+
+             {/* 返回按鈕 */}
+             <BackButton navigate={navigate} />
             
             {/* 只有當不是載入中且沒有錯誤時才顯示內容 */}
             {!isLoading && !error && (

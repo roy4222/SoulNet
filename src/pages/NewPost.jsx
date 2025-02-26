@@ -8,6 +8,7 @@ import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { v4 as uuidv4 } from 'uuid';
 import firebase, { r2Client } from '../utils/firebase';
 import ScrollToTopButton from '../components/ScrollToTopButton';
+import BackButton from '../components/UI/BackButton';
 
 // 獲取文件的ContentType
 const getContentType = (file) => {
@@ -226,6 +227,9 @@ export default function NewPost() {
             exit={{ opacity: 0 }}
             className="max-w-2xl mx-auto p-4"
         >
+            {/* 返回按鈕 */}
+            <BackButton navigate={navigate} />
+            
             {/* 頁面標題 */}
             <h1 className="text-3xl font-bold mb-6 text-gray-800 dark:text-gray-200">發表新文章</h1>
             
