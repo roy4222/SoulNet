@@ -20,6 +20,7 @@ import SuccessMessage from '../components/UI/SuccessMessage';
 import BackButton from '../components/UI/BackButton';
 import ScrollToTopButton from '../components/ScrollToTopButton';
 import { ROUTES } from '../routes';
+import { shareUrl } from '../utils/ShareUtils';
 
 // 定義 Post 組件
 function Post() {
@@ -237,35 +238,13 @@ function Post() {
 
   // 處理分享功能
   const handleShare = async () => {
-    try {
-      await navigator.clipboard.writeText(window.location.href);
-      // 確保不會誤判為轉發成功的訊息
-      if (post.reposts?.includes(currentUser?.uid)) {
-        // 暫時移除轉發狀態，避免訊息顯示為"轉發成功"
-        const originalReposts = [...post.reposts];
-        setPost(prev => ({
-          ...prev,
-          reposts: prev.reposts.filter(uid => uid !== currentUser?.uid)
-        }));
-        
-        setShowSuccess(true); // 顯示成功訊息
-        setSuccessMessageType('share');
-        setTimeout(() => {
-          setShowSuccess(false);
-          // 恢復原始轉發狀態
-          setPost(prev => ({
-            ...prev,
-            reposts: originalReposts
-          }));
-        }, 1000);
-      } else {
-        setShowSuccess(true); // 顯示成功訊息
-        setSuccessMessageType('share');
-        setTimeout(() => setShowSuccess(false), 1000); // 3秒後隱藏訊息
-      }
-    } catch (error) {
-      console.error('Error copying to clipboard:', error);
-    }
+    // 使用 ShareUtils 中的 shareUrl 函數
+    shareUrl(
+      window.location.href,
+      setSuccessMessageType,
+      setShowSuccess,
+      1000
+    );
   };
 
   // 處理轉發功能

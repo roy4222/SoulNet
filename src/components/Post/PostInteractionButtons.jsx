@@ -97,7 +97,8 @@ function PostInteractionButtons({ post, currentUser, onLike, navigate, onShare, 
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
-          if (onShare) onShare();
+          console.log('分享按鈕被點擊，post:', post);
+          if (onShare) onShare(post);
         }}
         className="flex items-center gap-2 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-all duration-200 group relative"
       >
@@ -105,7 +106,6 @@ function PostInteractionButtons({ post, currentUser, onLike, navigate, onShare, 
         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" className="group-hover:text-blue-500">
           <path fill="currentColor" d="M13 14h-2a9 9 0 0 0-7.968 4.81A10 10 0 0 1 3 18C3 12.477 7.477 8 13 8V3l10 8l-10 8z"/>
         </svg>
-        <span className="text-sm font-medium">{post.shares || 0}</span>
         {/* 懸停時顯示的提示文字 */}
         <span className="invisible group-hover:visible absolute bottom-full mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded whitespace-nowrap">分享</span>
       </button>

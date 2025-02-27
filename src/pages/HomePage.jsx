@@ -10,6 +10,8 @@ import ImageModal from '../components/UI/ImageModal';
 import SuccessMessage from '../components/UI/SuccessMessage';
 import PostCard from '../components/Post/PostCard';
 import CategorySidebar from '../components/Category/CategorySidebar';
+import { shareUrl } from '../utils/ShareUtils';
+import { ROUTES } from '../routes';
 
 // localStorage 的 key
 const USER_KEY = 'social:user';
@@ -19,6 +21,8 @@ function HomePage() {
   // 定義狀態變量和鉤子
   const [users, setUsers] = useState({}); // 用戶資訊快取
   const [showSuccess, setShowSuccess] = useState(false);
+  const [successMessageType, setSuccessMessageType] = useState(''); // 成功訊息類型
+  const [repostedPostId, setRepostedPostId] = useState(null); // 轉發的文章ID
   const [user, setUser] = useState(() => {
     // 初始化時從 localStorage 讀取用戶資訊
     const savedUser = localStorage.getItem(USER_KEY);
@@ -145,6 +149,17 @@ function HomePage() {
         reposts: arrayUnion(currentUser.uid)
       });
       
+      // 設置轉發的文章ID
+      setRepostedPostId(docRef.id);
+      // 設置成功訊息類型
+      setSuccessMessageType('repost');
+      // 顯示成功訊息
+      setShowSuccess(true);
+      // 3秒後隱藏成功訊息
+      setTimeout(() => {
+        setShowSuccess(false);
+        setRepostedPostId(null);
+      }, 3000);
      
     } catch (error) {
       console.error('Error reposting:', error);
@@ -162,6 +177,17 @@ function HomePage() {
       });
       setPosts(revertedPosts);
     }
+  };
+
+  // 處理分享功能
+  const handleShare = (post) => {
+    // 使用 ShareUtils 中的 shareUrl 函數
+    shareUrl(
+      `${window.location.origin}/post/${post.id}`,
+      setSuccessMessageType,
+      setShowSuccess,
+      1000
+    );
   };
 
   // 獲取用戶資訊的函數
@@ -287,16 +313,6 @@ function HomePage() {
     return post.category === selectedCategory || post.topic === selectedCategory;
   });
 
-  const handleShare = async (post) => {
-    try {
-      await navigator.clipboard.writeText(`${window.location.origin}/post/${post.id}`);
-      setShowSuccess(true);
-      setTimeout(() => setShowSuccess(false), 2000);
-    } catch (error) {
-      console.error('Error copying to clipboard:', error);
-    }
-  };
-
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-8">
@@ -351,7 +367,10 @@ function HomePage() {
                       setIsImageModalOpen(true);
                     }}
                     onLike={handleLike}
-                    onShare={handleShare}
+                    onShare={(post) => {
+                      console.log('PostCard 調用 onShare，post:', post);
+                      handleShare(post);
+                    }}
                     onRepost={() => handleRepost(post)}
                     navigate={navigate}
                   />
@@ -372,8 +391,33 @@ function HomePage() {
       />
       {/* 回到頂部按鈕組件 */}
       <ScrollToTopButton />
-      {/* 成功提示組件 */}
-      <SuccessMessage show={showSuccess} />
+      {/* 使用 SuccessMessage 組件顯示操作成功訊息 */}
+      <SuccessMessage 
+          show={showSuccess} // 控制訊息的顯示與隱藏
+          message={
+            // 根據操作類型顯示不同的成功訊息
+            successMessageType === 'share' 
+              ? "連結已複製到剪貼簿！" 
+              : successMessageType === 'repost' 
+                ? "轉發成功！"
+                : "評論發佈成功！"
+          }
+          actionText={
+            // 僅在轉發成功且有轉發文章ID時顯示"查看轉發"按鈕
+            successMessageType === 'repost' && repostedPostId ? "查看轉發" : null
+          }
+          onAction={
+            // 點擊"查看轉發"按鈕時的處理函數
+            successMessageType === 'repost' && repostedPostId 
+              ? () => {
+                console.log('successMessageType:', successMessageType);
+                console.log('repostedPostId:', repostedPostId);
+                console.log('ROUTES.PROFILE:', ROUTES.PROFILE);
+                navigate(ROUTES.PROFILE) 
+              } 
+              : null
+          }
+        />
     </div>
   );
 };
