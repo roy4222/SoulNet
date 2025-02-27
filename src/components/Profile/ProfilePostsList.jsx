@@ -31,14 +31,19 @@ function ProfilePostsList({ posts, reposts, activeTab, navigate }) {
 
   // 獲取原始文章資訊
   useEffect(() => {
+    // 只在活動標籤為轉發(1)且有轉發文章時執行
     if (activeTab === 1 && reposts.length > 0) {
       const fetchOriginalPosts = async () => {
         const originalPostsData = {};
         
+        // 遍歷所有轉發文章
         for (const repost of reposts) {
+          // 檢查是否有原始文章ID
           if (repost.originalPostId) {
             try {
+              // 從數據庫獲取原始文章
               const originalPostDoc = await getDoc(doc(db, 'posts', repost.originalPostId));
+              // 如果原始文章存在，將其添加到originalPostsData對象中
               if (originalPostDoc.exists()) {
                 originalPostsData[repost.originalPostId] = {
                   ...originalPostDoc.data(),
@@ -51,12 +56,14 @@ function ProfilePostsList({ posts, reposts, activeTab, navigate }) {
           }
         }
         
+        // 更新原始文章狀態
         setOriginalPosts(originalPostsData);
       };
       
+      // 執行獲取原始文章的函數
       fetchOriginalPosts();
     }
-  }, [activeTab, reposts]);
+  }, [activeTab, reposts]); // 依賴於activeTab和reposts的變化
 
   // 渲染文章卡片
   const renderPostCard = (post, isRepost = false) => {

@@ -19,6 +19,7 @@ import ImageModal from '../components/UI/ImageModal';
 import SuccessMessage from '../components/UI/SuccessMessage';
 import BackButton from '../components/UI/BackButton';
 import ScrollToTopButton from '../components/ScrollToTopButton';
+import { ROUTES } from '../routes';
 
 // 定義 Post 組件
 function Post() {
@@ -32,8 +33,11 @@ function Post() {
   const [selectedImage, setSelectedImage] = useState(null);
   const [views, setViews] = useState(0);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [successMessageType, setSuccessMessageType] = useState('share'); // 'share' 或 'repost'
+  const [repostedPostId, setRepostedPostId] = useState(null); // 存儲新創建的轉發文章ID
   // 添加排序方式狀態，預設為 'newest'
   const [sortOrder, setSortOrder] = useState('newest');
+  
 
   // 使用 React Router 的 hooks
   const { id } = useParams();
@@ -215,6 +219,7 @@ function Post() {
 
       // 顯示成功提示
       setShowSuccess(true);
+      setSuccessMessageType('comment');
       setTimeout(() => setShowSuccess(false), 2000);
 
       // 更新本地狀態，將新評論添加到評論陣列中
@@ -234,7 +239,30 @@ function Post() {
   const handleShare = async () => {
     try {
       await navigator.clipboard.writeText(window.location.href);
-      alert('連結已複製到剪貼簿！');
+      // 確保不會誤判為轉發成功的訊息
+      if (post.reposts?.includes(currentUser?.uid)) {
+        // 暫時移除轉發狀態，避免訊息顯示為"轉發成功"
+        const originalReposts = [...post.reposts];
+        setPost(prev => ({
+          ...prev,
+          reposts: prev.reposts.filter(uid => uid !== currentUser?.uid)
+        }));
+        
+        setShowSuccess(true); // 顯示成功訊息
+        setSuccessMessageType('share');
+        setTimeout(() => {
+          setShowSuccess(false);
+          // 恢復原始轉發狀態
+          setPost(prev => ({
+            ...prev,
+            reposts: originalReposts
+          }));
+        }, 1000);
+      } else {
+        setShowSuccess(true); // 顯示成功訊息
+        setSuccessMessageType('share');
+        setTimeout(() => setShowSuccess(false), 1000); // 3秒後隱藏訊息
+      }
     } catch (error) {
       console.error('Error copying to clipboard:', error);
     }
@@ -293,8 +321,19 @@ function Post() {
         reposts: arrayUnion(currentUser.uid)
       });
       
-      // 導航到新創建的轉發文章，添加時間戳參數確保每次都是唯一的 URL
-      navigate(`/post/${docRef.id}?t=${Date.now()}`);
+      // 顯示成功訊息
+      setShowSuccess(true);
+      setSuccessMessageType('repost');
+      
+      // 儲存新創建的文章ID，以便稍後使用
+      const newPostId = docRef.id;
+      setRepostedPostId(newPostId);
+      
+      // 只顯示成功訊息，不自動導航
+      setTimeout(() => {
+        setShowSuccess(false);
+        setRepostedPostId(null); // 清除轉發文章ID
+      }, 2000);
     } catch (error) {
       console.error('Error reposting:', error);
       alert('轉發失敗，請稍後再試');
@@ -391,8 +430,33 @@ function Post() {
           }}
         />
 
-        {/* 使用 SuccessMessage 組件 */}
-        <SuccessMessage show={showSuccess} message="訊息傳送成功！" />
+        {/* 使用 SuccessMessage 組件顯示操作成功訊息 */}
+        <SuccessMessage 
+          show={showSuccess} // 控制訊息的顯示與隱藏
+          message={
+            // 根據操作類型顯示不同的成功訊息
+            successMessageType === 'share' 
+              ? "連結已複製到剪貼簿！" 
+              : successMessageType === 'repost' 
+                ? "轉發成功！"
+                : "評論發佈成功！"
+          }
+          actionText={
+            // 僅在轉發成功且有轉發文章ID時顯示"查看轉發"按鈕
+            successMessageType === 'repost' && repostedPostId ? "查看轉發" : null
+          }
+          onAction={
+            // 點擊"查看轉發"按鈕時的處理函數
+            successMessageType === 'repost' && repostedPostId 
+              ? () => {
+                console.log('successMessageType:', successMessageType);
+                console.log('repostedPostId:', repostedPostId);
+                console.log('ROUTES.PROFILE:', ROUTES.PROFILE);
+                navigate(ROUTES.PROFILE) 
+              } 
+              : null
+          }
+        />
       </div>
       <ScrollToTopButton />
     </motion.div>
