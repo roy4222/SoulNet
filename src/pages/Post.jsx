@@ -1,6 +1,6 @@
 // 引入必要的 React 函式和組件
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { db } from '../utils/firebase';
 import { doc, getDoc, updateDoc, arrayUnion, arrayRemove, Timestamp, collection, addDoc } from 'firebase/firestore';
@@ -38,6 +38,7 @@ function Post() {
   // 使用 React Router 的 hooks
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   
   // 使用自定義的 Auth hook
   const { currentUser } = useAuth();
@@ -141,7 +142,15 @@ function Post() {
 
     // 調用 fetchPost 函數
     fetchPost();
-  }, [id]); // 依賴項數組中包含 id，當 id 變化時重新執行 effect
+    
+    // 清理函數
+    return () => {
+      // 組件卸載時重置狀態
+      setPost(null);
+      setIsLoading(true);
+      setError('');
+    };
+  }, [id, location]); // 添加 location 作為依賴，確保每次頁面導航時都重新獲取數據
 
   // 處理點讚功能
   const handleLike = async () => {
@@ -239,14 +248,26 @@ function Post() {
       return;
     }
 
+    // 檢查用戶是否已經轉發過這篇文章
+    if (post.reposts?.includes(currentUser.uid)) {
+      alert('您已經轉發過這篇文章');
+      return;
+    }
+
     try {
+      // 立即更新本地狀態，防止重複點擊
+      setPost(prev => ({
+        ...prev,
+        reposts: [...(prev.reposts || []), currentUser.uid]
+      }));
+
       // 獲取文章的引用
       const postRef = doc(db, 'posts', id);
       
       // 創建新的轉發文章
       const repostData = {
-        title: post.title,
-        content: post.content,
+        title: post.title || '無標題',
+        content: post.content || '無內容',
         author: {
           uid: currentUser.uid,
           displayName: currentUser.displayName || '匿名用戶',
@@ -260,7 +281,8 @@ function Post() {
         isRepost: true,
         originalPostId: id,
         originalAuthor: post.author?.displayName || '匿名用戶',
-        images: post.images || []
+        imageUrl: post.imageUrl || null,
+        category: post.category || post.topic || 'other'
       };
 
       // 將轉發文章添加到 posts collection
@@ -270,21 +292,18 @@ function Post() {
       await updateDoc(postRef, {
         reposts: arrayUnion(currentUser.uid)
       });
-
-      // 更新本地狀態
-      setPost(prev => ({
-        ...prev,
-        reposts: [...(prev.reposts || []), currentUser.uid]
-      }));
-
-      // 提示用戶轉發成功
-      alert('轉發成功！');
       
-      // 導航到新創建的轉發文章
-      navigate(`/post/${docRef.id}`);
+      // 導航到新創建的轉發文章，添加時間戳參數確保每次都是唯一的 URL
+      navigate(`/post/${docRef.id}?t=${Date.now()}`);
     } catch (error) {
       console.error('Error reposting:', error);
       alert('轉發失敗，請稍後再試');
+      
+      // 如果失敗，恢復本地狀態
+      setPost(prev => ({
+        ...prev,
+        reposts: (prev.reposts || []).filter(uid => uid !== currentUser.uid)
+      }));
     }
   };
 

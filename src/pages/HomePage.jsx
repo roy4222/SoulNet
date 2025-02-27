@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { db } from '../utils/firebase';
-import { collection, getDocs, doc, getDoc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc, updateDoc, arrayUnion, arrayRemove, addDoc, Timestamp } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import PostInteractionButtons from '../components/Post/PostInteractionButtons';
@@ -86,6 +86,84 @@ function HomePage() {
     }
   };
 
+  // 處理轉發功能
+  const handleRepost = async (post) => {
+    // 檢查用戶是否已登入，如果未登入則導向登入頁面
+    if (!currentUser) {
+      navigate('/sign');
+      return;
+    }
+
+    // 檢查用戶是否已經轉發過這篇文章
+    if (post.reposts?.includes(currentUser.uid)) {
+      alert('您已經轉發過這篇文章');
+      return;
+    }
+
+    try {
+      // 立即更新本地狀態，防止重複點擊
+      const updatedPosts = posts.map(p => {
+        if (p.id === post.id) {
+          return {
+            ...p,
+            reposts: [...(p.reposts || []), currentUser.uid]
+          };
+        }
+        return p;
+      });
+      setPosts(updatedPosts);
+
+      // 獲取文章的引用
+      const postRef = doc(db, 'posts', post.id);
+      
+      // 創建新的轉發文章
+      const repostData = {
+        title: post.title || '無標題',
+        content: post.content || '無內容',
+        author: {
+          uid: currentUser.uid,
+          displayName: currentUser.displayName || '匿名用戶',
+          photoURL: currentUser.photoURL,
+          email: currentUser.email
+        },
+        createdAt: Timestamp.now(),
+        likes: [],
+        comments: [],
+        reposts: [],
+        isRepost: true,
+        originalPostId: post.id,
+        originalAuthor: post.author?.displayName || '匿名用戶',
+        imageUrl: post.imageUrl || null,
+        category: post.category || post.topic || 'other'
+      };
+
+      // 將轉發文章添加到 posts collection
+      const docRef = await addDoc(collection(db, 'posts'), repostData);
+      
+      // 更新原文章的轉發計數
+      await updateDoc(postRef, {
+        reposts: arrayUnion(currentUser.uid)
+      });
+      
+     
+    } catch (error) {
+      console.error('Error reposting:', error);
+      alert('轉發失敗，請稍後再試');
+      
+      // 如果失敗，恢復本地狀態
+      const revertedPosts = posts.map(p => {
+        if (p.id === post.id) {
+          return {
+            ...p,
+            reposts: (p.reposts || []).filter(uid => uid !== currentUser.uid)
+          };
+        }
+        return p;
+      });
+      setPosts(revertedPosts);
+    }
+  };
+
   // 獲取用戶資訊的函數
   const fetchUserInfo = async (uid) => {
     if (!uid) return null;
@@ -166,6 +244,12 @@ function HomePage() {
         
         querySnapshot.forEach((doc) => {
           const postData = doc.data();
+          
+          // 篩選掉轉發文章，首頁不顯示轉發文章
+          if (postData.isRepost === true) {
+            return;
+          }
+          
           let imageUrl = postData.imageUrl;
           
           if (imageUrl) {
@@ -268,6 +352,7 @@ function HomePage() {
                     }}
                     onLike={handleLike}
                     onShare={handleShare}
+                    onRepost={() => handleRepost(post)}
                     navigate={navigate}
                   />
                 ))

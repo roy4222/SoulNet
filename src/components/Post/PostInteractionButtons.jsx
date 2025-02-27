@@ -58,18 +58,38 @@ function PostInteractionButtons({ post, currentUser, onLike, navigate, onShare, 
           if (onRepost) onRepost();
         }}
         className="flex items-center gap-2 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-all duration-200 group relative"
+        disabled={post.reposts?.includes(currentUser?.uid)}
       >
-        {/* 轉發圖標 */}
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 21 21" className="group-hover:text-green-500">
-          <g fill="none" fillRule="evenodd" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5">
-            <path d="m13.5 13.5l3 3l3-3"/>
-            <path d="M9.5 4.5h3a4 4 0 0 1 4 4v8m-9-9l-3-3l-3 3"/>
-            <path d="M11.5 16.5h-3a4 4 0 0 1-4-4v-8"/>
-          </g>
-        </svg>
+        {/* 轉發圖標 - 根據是否已轉發顯示不同圖標 */}
+        {post.reposts?.includes(currentUser?.uid) ? (
+          // 已轉發 - 顯示新的 SVG 圖示
+          <svg 
+            xmlns="http://www.w3.org/2000/svg" 
+            width="24" 
+            height="24" 
+            viewBox="0 0 16 16"
+            className="text-green-500"
+          >
+            <g fill="currentColor" fillRule="evenodd" clipRule="evenodd">
+              <path d="M11.354 6.207L7.5 10.061L5.146 7.707L5.854 7L7.5 8.646L10.646 5.5z"/>
+              <path d="M8 2a6 6 0 0 0-5.324 8.769l-.887.462a7 7 0 0 1 10.52-8.749l.652.51L9 4.774v-2.69A6 6 0 0 0 8 2m5.383 3.346a6 6 0 0 0-.393-.679l.831-.556q.255.38.458.792A7 7 0 0 1 3.606 13.45l-.703-.567L7.5 11.3v2.68q.248.02.5.02a6 6 0 0 0 5.383-8.654"/>
+            </g>
+          </svg>
+        ) : (
+          // 未轉發 - 顯示原始圖標
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 21 21" className="group-hover:text-green-500">
+            <g fill="none" fillRule="evenodd" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5">
+              <path d="m13.5 13.5l3 3l3-3"/>
+              <path d="M9.5 4.5h3a4 4 0 0 1 4 4v8m-9-9l-3-3l-3 3"/>
+              <path d="M11.5 16.5h-3a4 4 0 0 1-4-4v-8"/>
+            </g>
+          </svg>
+        )}
         <span className="text-sm font-medium">{post.reposts?.length || 0}</span>
         {/* 懸停時顯示的提示文字 */}
-        <span className="invisible group-hover:visible absolute bottom-full mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded whitespace-nowrap">轉發</span>
+        <span className="invisible group-hover:visible absolute bottom-full mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded whitespace-nowrap">
+          {post.reposts?.includes(currentUser?.uid) ? '已轉發' : '轉發'}
+        </span>
       </button>
 
       {/* 分享按鈕 */}

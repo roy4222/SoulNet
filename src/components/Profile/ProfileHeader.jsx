@@ -5,22 +5,24 @@ import SaveIcon from '@mui/icons-material/Save';
 import CancelIcon from '@mui/icons-material/Cancel';
 import ImageIcon from '@mui/icons-material/Image';
 
-// 預設頭像
+// 定義預設頭像URL
 const DEFAULT_AVATAR = 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSCvBNjFR_6BVhW3lFNwF0oEk2N8JXjeiaSqg&s';
 
+// ProfileHeader 組件：顯示用戶資料和編輯功能
 function ProfileHeader({ 
-  user, 
-  isEditing, 
-  imagePreview, 
-  editForm, 
-  isLoading,
-  setEditForm, 
-  setIsEditing, 
-  handleSubmit, 
-  handleAvatarChange, 
-  handleCancel 
+  user,                // 用戶資料
+  isEditing,           // 是否處於編輯模式
+  imagePreview,        // 頭像預覽
+  editForm,            // 編輯表單資料
+  isLoading,           // 加載狀態
+  setEditForm,         // 設置編輯表單資料的函數
+  setIsEditing,        // 設置編輯模式的函數
+  handleSubmit,        // 提交編輯的處理函數
+  handleAvatarChange,  // 更改頭像的處理函數
+  handleCancel         // 取消編輯的處理函數
 }) {
   return (
+    // 使用 framer-motion 創建動畫效果
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
@@ -77,7 +79,9 @@ function ProfileHeader({
             {/* 用戶資料部分 */}
             <div className="flex-1 w-full max-w-xl">
               {isEditing ? (
+                // 編輯模式下的表單
                 <div className="space-y-6">
+                  {/* 顯示名稱輸入框 */}
                   <input
                     type="text"
                     placeholder="顯示名稱"
@@ -85,6 +89,7 @@ function ProfileHeader({
                     onChange={(e) => setEditForm(prev => ({ ...prev, displayName: e.target.value }))}
                     className="w-full px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm hover:border-blue-500 dark:hover:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 text-gray-900 dark:text-gray-100 placeholder-gray-600 dark:placeholder-gray-400"
                   />
+                  {/* 個人簡介輸入框 */}
                   <textarea
                     rows="4"
                     placeholder="個人簡介"
@@ -92,6 +97,7 @@ function ProfileHeader({
                     onChange={(e) => setEditForm(prev => ({ ...prev, bio: e.target.value }))}
                     className="w-full px-4 py-2 mt-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm hover:border-blue-500 dark:hover:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 text-gray-900 dark:text-gray-100 placeholder-gray-600 dark:placeholder-gray-400 resize-none"
                   ></textarea>
+                  {/* 保存和取消按鈕 */}
                   <div className="flex space-x-4 justify-end mt-6">
                     <Button
                       variant="contained"
@@ -114,6 +120,7 @@ function ProfileHeader({
                   </div>
                 </div>
               ) : (
+                // 非編輯模式下的用戶資訊顯示
                 <div>
                   {/* 用戶資訊區塊 */}
                   <div className="flex items-center justify-between mb-6">
@@ -135,6 +142,7 @@ function ProfileHeader({
                         {user?.email}
                       </Typography>
                     </div>
+                    {/* 編輯按鈕 */}
                     <IconButton 
                       onClick={() => setIsEditing(true)}
                       className="bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600"

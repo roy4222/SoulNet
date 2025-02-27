@@ -1,5 +1,5 @@
 // 引入必要的 React 函式和組件
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { db, auth, storage } from '../utils/firebase';
@@ -8,6 +8,7 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { updateProfile } from 'firebase/auth';
 import { PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { r2Client } from '../utils/firebase';
+import { useTheme } from '@mui/material/styles';
 
 // 引入自定義組件
 import ProfileHeader from '../components/Profile/ProfileHeader';
@@ -38,6 +39,7 @@ function Profile() {
         avatar: null
     });
     const [activeTab, setActiveTab] = useState(0);  // 儲存目前的分頁索引
+    const theme = useTheme();
 
     // 處理表單提交
     const handleSubmit = async () => {
@@ -204,26 +206,91 @@ function Profile() {
     useEffect(() => {
         const loadUserData = async () => {
             try {
+                console.log('開始載入用戶資料...');
                 setIsLoading(true);
                 setError('');
                 
                 // 獲取當前登入的用戶
                 const currentUser = auth.currentUser;
                 if (!currentUser) {
+                    console.log('用戶未登入，導向登入頁面');
                     navigate('/sign');  // 如果沒有登入，導向登入頁面
                     return;
                 }
+                
+                console.log('當前用戶 ID:', currentUser.uid);
 
-                const [userDoc, postsSnapshot, repostsSnapshot] = await Promise.all([
-                    getDoc(doc(db, 'users', currentUser.uid)),
-                    getDocs(query(collection(db, 'posts'), 
-                        where('authorId', '==', currentUser.uid), 
-                        where('isRepost', '==', false))),
-                    getDocs(query(collection(db, 'posts'), 
-                        where('authorId', '==', currentUser.uid), 
-                        where('isRepost', '==', true)))
-                ]);
-
+                // 先獲取用戶資料
+                const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+                
+                // 查詢所有文章
+                const allPostsSnapshot = await getDocs(collection(db, 'posts'));
+                console.log('所有文章數量:', allPostsSnapshot.size);
+                
+                // 在客戶端過濾出用戶的文章
+                const allPosts = allPostsSnapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+                
+                // 輸出所有文章的作者資訊，以便調試
+                allPosts.forEach((post, index) => {
+                    console.log(`文章 ${index + 1} - ID: ${post.id}`);
+                    console.log('作者資訊:', JSON.stringify(post.author));
+                    if (post.author) {
+                        console.log('作者 UID:', post.author.uid);
+                        console.log('當前用戶 UID:', currentUser.uid);
+                        console.log('是否匹配:', post.author.uid === currentUser.uid);
+                    }
+                });
+                
+                // 在客戶端過濾出用戶的原創文章和轉發文章
+                // 確保 author 欄位存在，且 author.uid 與當前用戶的 uid 匹配
+                const userPosts = allPosts.filter(post => {
+                    // 檢查 author 欄位是否存在
+                    if (!post.author) {
+                        console.log(`文章 ${post.id} 沒有 author 欄位`);
+                        return false;
+                    }
+                    
+                    // 檢查 author.uid 是否與當前用戶的 uid 匹配
+                    const isMatch = post.author.uid === currentUser.uid;
+                    
+                    // 檢查是否為原創文章（非轉發）
+                    const isOriginal = !post.isRepost;
+                    
+                    console.log(`文章 ${post.id} - 作者匹配: ${isMatch}, 原創文章: ${isOriginal}`);
+                    
+                    return isMatch && isOriginal;
+                });
+                
+                const userReposts = allPosts.filter(post => {
+                    // 檢查 author 欄位是否存在
+                    if (!post.author) {
+                        return false;
+                    }
+                    
+                    // 檢查 author.uid 是否與當前用戶的 uid 匹配
+                    const isMatch = post.author.uid === currentUser.uid;
+                    
+                    // 檢查是否為轉發文章
+                    const isRepost = post.isRepost === true;
+                    
+                    return isMatch && isRepost;
+                });
+                
+                console.log('用戶原創文章數量:', userPosts.length);
+                console.log('用戶轉發文章數量:', userReposts.length);
+                
+                // 按創建時間排序
+                const postsData = userPosts.sort((a, b) => 
+                    b.createdAt?.toDate() - a.createdAt?.toDate()
+                );
+                
+                const repostsData = userReposts.sort((a, b) => 
+                    b.createdAt?.toDate() - a.createdAt?.toDate()
+                );
+                
                 // 處理用戶資料
                 if (userDoc.exists()) {
                     const userData = { ...currentUser, ...userDoc.data() };
@@ -234,17 +301,27 @@ function Profile() {
                         bio: userData.bio || '', 
                         avatar: null 
                     });
-                }
-
-                // 處理文章和轉發文章
-                const postsData = postsSnapshot.docs
-                    .map(doc => ({ id: doc.id, ...doc.data() }))
-                    .sort((a, b) => b.createdAt?.toDate() - a.createdAt?.toDate());
+                } else {
+                    // 如果用戶文檔不存在，創建一個新的用戶文檔
+                    const newUserData = {
+                        uid: currentUser.uid,
+                        email: currentUser.email,
+                        displayName: currentUser.displayName || '匿名用戶',
+                        photoURL: currentUser.photoURL || DEFAULT_AVATAR,
+                        bio: '',
+                        createdAt: new Date()
+                    };
                     
-                const repostsData = repostsSnapshot.docs
-                    .map(doc => ({ id: doc.id, ...doc.data() }))
-                    .sort((a, b) => b.createdAt?.toDate() - a.createdAt?.toDate());
+                    await setDoc(doc(db, 'users', currentUser.uid), newUserData);
+                    setUser(newUserData);
+                    setEditForm({
+                        displayName: newUserData.displayName,
+                        bio: '',
+                        avatar: null
+                    });
+                }
                 
+                // 設置文章和轉發文章
                 setPosts(postsData);
                 setReposts(repostsData);
             } catch (err) {
@@ -277,8 +354,8 @@ function Profile() {
              {/* 返回按鈕 */}
              <BackButton navigate={navigate} />
             
-            {/* 只有當不是載入中且沒有錯誤時才顯示內容 */}
-            {!isLoading && !error && (
+            {/* 只有當不是載入中且沒有錯誤且用戶資料存在時才顯示內容 */}
+            {!isLoading && !error && user && (
                 <>
                     {/* 個人資料頭部 */}
                     <ProfileHeader 
@@ -298,14 +375,15 @@ function Profile() {
                     <ProfileTabs 
                         activeTab={activeTab}
                         handleTabChange={handleTabChange}
-                        postsCount={posts.length}
-                        repostsCount={reposts.length}
+                        postsCount={posts ? posts.length : 0}
+                        repostsCount={reposts ? reposts.length : 0}
+                        theme={theme}
                     />
                     
                     {/* 文章列表 */}
                     <ProfilePostsList 
-                        posts={posts}
-                        reposts={reposts}
+                        posts={posts || []}
+                        reposts={reposts || []}
                         activeTab={activeTab}
                         navigate={navigate}
                     />

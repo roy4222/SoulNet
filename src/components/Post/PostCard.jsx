@@ -15,6 +15,7 @@ function PostCard({
   onImageClick,
   onLike,
   onShare,
+  onRepost,
   navigate 
 }) {
   return (
@@ -113,6 +114,7 @@ function PostCard({
           onLike={onLike}
           navigate={navigate}
           onShare={onShare}
+          onRepost={onRepost}
         />
       </motion.article>
     </Link>
