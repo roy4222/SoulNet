@@ -266,7 +266,7 @@ export default function NewPost() {
                  {/* 圖片上傳區域 */}
                  <div className="mb-6">
                     <label htmlFor="images" className="block text-lg font-semibold text-gray-800 dark:text-gray-200 mb-2">
-                        上傳圖片(可選，最多5張)
+                        上傳圖片(可選，最多10張)
                     </label>
                     <div className="flex items-center justify-center w-full">
                       {/* 圖片上傳標籤 */}
@@ -286,7 +286,7 @@ export default function NewPost() {
                           <p className="mb-2 text-sm text-gray-500 dark:text-gray-400">
                             <span className="font-semibold">點擊上傳</span> 或拖放圖片
                           </p>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">PNG, JPG, GIF (最多5張，每張最大 5MB)</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">PNG, JPG, GIF (最多10張，每張最大 5MB)</p>
                         </div>
                         {/* 隱藏的文件輸入框 */}
                         <input
