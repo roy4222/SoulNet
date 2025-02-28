@@ -5,6 +5,8 @@ import HomePage from './pages/HomePage';
 import NewPost from './pages/NewPost';
 import Post from './pages/Post';
 import Profile from './pages/Profile';
+import EditPost from './pages/EditPost';
+import AdminPanel from './pages/AdminPanel';
 
 // 定義路由路徑常量
 export const ROUTES = {
@@ -13,7 +15,9 @@ export const ROUTES = {
     REGISTER: '/register',
     NEW_POST: '/NewPost',
     POST_DETAIL: '/post/:id',
-    PROFILE: '/profile'
+    EDIT_POST: '/edit-post/:id',
+    PROFILE: '/profile',
+    ADMIN: '/admin'
 };
 
 // 定義路由配置
@@ -44,11 +48,20 @@ export const routes = [
         title: '文章詳情'
     },
     {
+        path: ROUTES.EDIT_POST,
+        element: EditPost,
+        title: '編輯文章'
+    },
+    {
         path: ROUTES.PROFILE,
         element: Profile,
         title: '個人資料'
+    },
+    {
+        path: ROUTES.ADMIN,
+        element: AdminPanel,
+        title: '管理員面板'
     }
-    
 ];
 
 // 導出所有路由配置

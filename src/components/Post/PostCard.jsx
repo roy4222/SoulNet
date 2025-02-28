@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import PostInteractionButtons from './PostInteractionButtons';
+import PostActions from './PostActions';
 import { FiChevronLeft, FiChevronRight } from 'react-icons/fi'; // 引入箭頭圖標
 
 const DEFAULT_AVATAR = 'https://pub-6ee61ab59e054c0facbe8351ca1efce0.r2.dev/default-avatar.png';
@@ -68,28 +69,35 @@ function PostCard({
         transition={{ duration: 0.3 }}
       >
         {/* 文章標題和作者資訊 */}
-        <div className="flex items-center gap-3 mb-4">
-          {/* 作者頭像 */}
-          <img 
-            src={users[post.author?.uid]?.photoURL || DEFAULT_AVATAR} 
-            alt={users[post.author?.uid]?.displayName || '匿名用戶'}
-            className="w-10 h-10 rounded-full object-cover"
-          />
-          <div>
-            {/* 作者名稱或郵箱 */}
-            <h3 className="font-medium text-gray-900 dark:text-white">
-              {users[post.author?.uid]?.displayName || '匿名用戶'}
-            </h3>
-            {/* 發文時間 */}
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              {post.createdAt?.toDate().toLocaleString('zh-TW', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-              })}
-            </p>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            {/* 作者頭像 */}
+            <img 
+              src={users[post.author?.uid]?.photoURL || DEFAULT_AVATAR} 
+              alt={users[post.author?.uid]?.displayName || '匿名用戶'}
+              className="w-10 h-10 rounded-full object-cover"
+            />
+            <div>
+              {/* 作者名稱或郵箱 */}
+              <h3 className="font-medium text-gray-900 dark:text-white">
+                {users[post.author?.uid]?.displayName || '匿名用戶'}
+              </h3>
+              {/* 發文時間 */}
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                {post.createdAt?.toDate().toLocaleString('zh-TW', {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })}
+              </p>
+            </div>
+          </div>
+          
+          {/* 添加文章操作按鈕 */}
+          <div onClick={(e) => e.preventDefault()}>
+            <PostActions post={post} />
           </div>
         </div>
 

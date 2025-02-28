@@ -2,6 +2,7 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ROUTES } from '../routes';
+import { useAuth } from '../contexts/AuthContext';
 
 // 預設頭像URL
 const DEFAULT_AVATAR = 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSCvBNjFR_6BVhW3lFNwF0oEk2N8JXjeiaSqg&s';
@@ -18,6 +19,7 @@ export default function MobileMenu({
     menuRef  // 選單的 ref
 }) {
     const navigate = useNavigate();
+    const { isAdmin } = useAuth(); // 獲取用戶角色信息
 
     return (
         <AnimatePresence>
@@ -150,6 +152,17 @@ export default function MobileMenu({
                                         {link.text}
                                     </Link>
                                 ))}
+                                
+                                {/* 管理員面板連結 - 只對管理員顯示 */}
+                                {user && isAdmin() && (
+                                    <Link
+                                        to={ROUTES.ADMIN}
+                                        className="block text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 px-4 py-2 rounded-lg transition-colors duration-200"
+                                        onClick={onClose}
+                                    >
+                                        管理員面板
+                                    </Link>
+                                )}
                             </div>
 
                             {/* 主題切換按鈕：根據當前模式顯示不同圖標和文字 */}

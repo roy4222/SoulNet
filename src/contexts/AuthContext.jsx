@@ -8,6 +8,7 @@ import {
   onAuthStateChanged,
   updateProfile
 } from 'firebase/auth';
+import { getFirestore, doc, getDoc } from 'firebase/firestore';
 
 // 創建身份驗證 Context
 const AuthContext = createContext();
@@ -16,6 +17,7 @@ const AuthContext = createContext();
 export function AuthProvider({ children }) {
   // 管理當前用戶狀態和加載狀態
   const [currentUser, setCurrentUser] = useState(null);
+  const [userRole, setUserRole] = useState(null); // 添加用戶角色狀態
   const [loading, setLoading] = useState(true);
 
   // 用戶註冊函數
@@ -43,15 +45,39 @@ export function AuthProvider({ children }) {
   const logout = async () => {
     try {
       await signOut(auth);
+      setUserRole(null); // 登出時清除角色
     } catch (error) {
       throw error;
     }
   };
 
+  // 檢查用戶是否為管理員
+  const isAdmin = () => {
+    return userRole === 'admin';
+  };
+
   // 使用 useEffect 監聽用戶身份驗證狀態變化
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setCurrentUser(user);
+      
+      // 如果用戶已登入，獲取用戶角色
+      if (user) {
+        try {
+          const db = getFirestore();
+          const userDoc = await getDoc(doc(db, 'users', user.uid));
+          if (userDoc.exists()) {
+            const userData = userDoc.data();
+            setUserRole(userData.role || 'user'); // 設置用戶角色，默認為 'user'
+          } else {
+            setUserRole('user'); // 如果沒有找到用戶文檔，默認為普通用戶
+          }
+        } catch (error) {
+          console.error('Error fetching user role:', error);
+          setUserRole('user'); // 發生錯誤時，默認為普通用戶
+        }
+      }
+      
       setLoading(false);
     });
 
@@ -62,6 +88,8 @@ export function AuthProvider({ children }) {
   // 準備要提供給子組件的值
   const value = {
     currentUser,
+    userRole,
+    isAdmin,
     register,
     login,
     logout,

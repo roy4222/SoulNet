@@ -59,7 +59,8 @@ const Register = () => {
           photoURL: avatarUrl,
           bio: '',
           createdAt: new Date(),
-          updatedAt: new Date()
+          updatedAt: new Date(),
+          role: 'user' // 添加角色字段，默認為普通用戶
         })
       ]);
 

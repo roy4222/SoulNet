@@ -7,6 +7,7 @@ import { auth } from '../utils/firebase';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '../contexts/themeContext';
 import MobileMenu from './MobileMenu';
+import { useAuth } from '../contexts/AuthContext';
 
 // 預設頭像URL
 const DEFAULT_AVATAR = 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSCvBNjFR_6BVhW3lFNwF0oEk2N8JXjeiaSqg&s';
@@ -29,6 +30,7 @@ export default function Header() {
     const dropdownRef = useRef(null); // 下拉菜單的引用，用於檢測外部點擊
     const menuRef = useRef(null); // 漢堡菜單的引用，用於檢測外部點擊
     const { isDarkMode, toggleTheme } = useTheme();
+    const { isAdmin } = useAuth(); // 獲取用戶角色信息
 
     // 顯示通知的函數
     const displayNotification = (message) => {
@@ -239,6 +241,16 @@ export default function Header() {
                                                 >
                                                     個人資料
                                                 </Link>  
+                                                {/* 管理員面板連結 - 只對管理員顯示 */}
+                                                {isAdmin() && (
+                                                    <Link 
+                                                        to={ROUTES.ADMIN}
+                                                        className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
+                                                        onClick={() => setShowDropdown(false)}
+                                                    >
+                                                        管理員面板
+                                                    </Link>
+                                                )}
                                                 {/* 登出按鈕 */}
                                                 <button 
                                                     onClick={() => {
