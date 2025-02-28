@@ -86,11 +86,6 @@ function EditPost() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!title.trim() || !content.trim()) {
-      alert('標題和內容不能為空');
-      return;
-    }
-    
     try {
       // 更新文章數據
       await updateDoc(doc(db, 'posts', id), {

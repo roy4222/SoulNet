@@ -7,6 +7,7 @@ import { useAuth } from '../contexts/AuthContext';
 import LoadingState from '../components/UI/LoadingState';
 import SuccessMessage from '../components/UI/SuccessMessage';
 import ScrollToTopButton from '../components/ScrollToTopButton';
+import BackButton from '../components/UI/BackButton';
 
 function AdminPanel() {
   const navigate = useNavigate();
@@ -177,7 +178,12 @@ function AdminPanel() {
       transition={{ duration: 0.5 }}
       className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8"
     >
+     
       <div className="max-w-6xl mx-auto px-4">
+        
+        {/* 返回按鈕 */}
+        <BackButton navigate={navigate} />
+
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">管理員面板</h1>
           
