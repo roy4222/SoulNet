@@ -182,7 +182,6 @@ function EditPost() {
                 onChange={(e) => setContent(e.target.value)}
                 className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white min-h-[200px]"
                 placeholder="請輸入文章內容"
-                required
               />
             </div>
             
