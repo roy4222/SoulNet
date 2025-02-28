@@ -31,8 +31,8 @@ export default function NewPost() {
     const [category, setCategory] = useState(''); // 初始值設為空字串
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
-    const [image, setImage] = useState(null);
-    const [imagePreview, setImagePreview] = useState('');
+    const [images, setImages] = useState([]); // 改為存儲多張圖片
+    const [imagePreviews, setImagePreviews] = useState([]); // 改為存儲多張圖片預覽
     const [categories, setCategories] = useState([]); // 存儲分類列表
     const [loadingCategories, setLoadingCategories] = useState(true); // 添加加載狀態
     
@@ -60,9 +60,9 @@ export default function NewPost() {
 
         // 獲取拖放的檔案
         const files = e.dataTransfer.files;
-        // 如果有檔案，則調用handleImageChange處理
-        if (files && files[0]) {
-            handleImageChange({ target: { files: [files[0]] } });
+        // 如果有檔案，則調用handleImagesChange處理
+        if (files && files.length > 0) {
+            handleImagesChange({ target: { files } });
         }
     };
 
@@ -79,9 +79,9 @@ export default function NewPost() {
         for (const item of items) {
             // 如果是圖片類型
             if (item.type.startsWith('image/')) {
-                // 獲取檔案並調用handleImageChange處理
+                // 獲取檔案並調用handleImagesChange處理
                 const file = item.getAsFile();
-                handleImageChange({ target: { files: [file] } });
+                handleImagesChange({ target: { files: [file] } });
                 break;
             }
         }
@@ -96,20 +96,44 @@ export default function NewPost() {
     }, [loading]);
 
     // 處理圖片選擇
-    const handleImageChange = (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            if (file.size > 5 * 1024 * 1024) { // 5MB限制
+    const handleImagesChange = (e) => {
+        const files = Array.from(e.target.files);
+        if (files.length > 0) {
+            // 檢查添加新圖片後總數是否超過限制
+            if (images.length + files.length > 5) {
+                setError('最多只能上傳5張圖片');
+                return;
+            }
+
+            // 檢查每個文件的大小
+            const oversizedFiles = files.filter(file => file.size > 5 * 1024 * 1024);
+            if (oversizedFiles.length > 0) {
                 setError('圖片大小不能超過5MB');
                 return;
             }
-            setImage(file);
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setImagePreview(reader.result);
-            };
-            reader.readAsDataURL(file);
+
+            // 添加新圖片到現有圖片數組
+            setImages(prevImages => [...prevImages, ...files]);
+
+            // 為每個新圖片創建預覽URL
+            const newPreviews = [];
+            files.forEach(file => {
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    newPreviews.push(reader.result);
+                    if (newPreviews.length === files.length) {
+                        setImagePreviews(prevPreviews => [...prevPreviews, ...newPreviews]);
+                    }
+                };
+                reader.readAsDataURL(file);
+            });
         }
+    };
+
+    // 移除圖片
+    const handleRemoveImage = (index) => {
+        setImages(prevImages => prevImages.filter((_, i) => i !== index));
+        setImagePreviews(prevPreviews => prevPreviews.filter((_, i) => i !== index));
     };
 
     // 上傳圖片到R2
@@ -155,9 +179,13 @@ export default function NewPost() {
         setError('');
 
         try {
-            let imageUrl = '';
-            if (image) {
-                imageUrl = await uploadImageToR2(image);
+            // 上傳所有圖片並獲取URLs
+            const imageUrls = [];
+            if (images.length > 0) {
+                // 並行上傳所有圖片
+                const uploadPromises = images.map(image => uploadImageToR2(image));
+                const urls = await Promise.all(uploadPromises);
+                imageUrls.push(...urls);
             }
 
             // 獲取 Firestore 實例
@@ -165,7 +193,7 @@ export default function NewPost() {
             
             // 創建新文章文檔，標題和內容可為空
             const postData = {
-                imageUrl: imageUrl || '',
+                imageUrls: imageUrls, // 使用圖片URL數組
                 title: title.trim() || '',
                 content: content.replace(/\n/g, '\n') || '',
                 category: category, 
@@ -237,44 +265,66 @@ export default function NewPost() {
             <form onSubmit={handleSubmit} className="space-y-4">
                  {/* 圖片上傳區域 */}
                  <div className="mb-6">
-                    <label htmlFor="image" className="block text-lg font-semibold text-gray-800 dark:text-gray-200 mb-2">
-                        上傳圖片(可選)
+                    <label htmlFor="images" className="block text-lg font-semibold text-gray-800 dark:text-gray-200 mb-2">
+                        上傳圖片(可選，最多5張)
                     </label>
                     <div className="flex items-center justify-center w-full">
-                      {/* 圖片上傳標籤，根據是否有預覽圖改變樣式 */}
+                      {/* 圖片上傳標籤 */}
                       <label 
-                        htmlFor="image" 
-                        className={`flex flex-col items-center justify-center w-full h-64 border-2 border-gray-300 dark:border-gray-600 border-dashed rounded-lg cursor-pointer ${imagePreview ? 'bg-cover bg-center' : 'bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700'}`} 
-                        style={imagePreview ? { backgroundImage: `url(${imagePreview})` } : {}}
+                        htmlFor="images" 
+                        className={`flex flex-col items-center justify-center w-full h-64 border-2 border-gray-300 dark:border-gray-600 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700`} 
                         onDragOver={handleDragOver}
                         onDrop={handleDrop}
                       >
-                        {/* 當沒有預覽圖時顯示上傳提示 */}
-                        {!imagePreview && (
-                          <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                            {/* 上傳圖標 */}
-                            <svg className="w-10 h-10 mb-3 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
-                            </svg>
-                            {/* 上傳提示文字 */}
-                            <p className="mb-2 text-sm text-gray-500 dark:text-gray-400">
-                              <span className="font-semibold">點擊上傳</span> 或拖放圖片
-                            </p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">PNG, JPG, GIF (最大 5MB)</p>
-                          </div>
-                        )}
+                        {/* 上傳提示 */}
+                        <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                          {/* 上傳圖標 */}
+                          <svg className="w-10 h-10 mb-3 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                          </svg>
+                          {/* 上傳提示文字 */}
+                          <p className="mb-2 text-sm text-gray-500 dark:text-gray-400">
+                            <span className="font-semibold">點擊上傳</span> 或拖放圖片
+                          </p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">PNG, JPG, GIF (最多5張，每張最大 5MB)</p>
+                        </div>
                         {/* 隱藏的文件輸入框 */}
                         <input
-                          id="image"
+                          id="images"
                           type="file"
                           accept="image/*"
-                          onChange={handleImageChange}
+                          onChange={handleImagesChange}
                           className="hidden"
-                          disabled={loading}
+                          disabled={loading || images.length >= 5}
+                          multiple
                         />
                       </label>
                     </div>
                     {error && <p className="mt-2 text-sm text-red-600 dark:text-red-400">{error}</p>}
+                    
+                    {/* 圖片預覽區域 */}
+                    {imagePreviews.length > 0 && (
+                      <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-4">
+                        {imagePreviews.map((preview, index) => (
+                          <div key={index} className="relative group">
+                            <img 
+                              src={preview} 
+                              alt={`預覽 ${index + 1}`} 
+                              className="w-full h-32 object-cover rounded-lg"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveImage(index)}
+                              className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                 </div>
 
                 {/* 標題輸入框 */}

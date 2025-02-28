@@ -183,7 +183,7 @@ function ProfilePostsList({ posts, reposts, activeTab, navigate }) {
                   whiteSpace: 'nowrap',
                   background: theme => theme.palette.mode === 'dark' 
                     ? 'linear-gradient(90deg, #111827, #1f2937)' 
-                    : 'linear-gradient(90deg, #1a1c23, #272935)',
+                    : 'linear-gradient(90deg, #ffffff, #f5f7fa)',
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: theme => theme.palette.mode === 'dark' ? 'inherit' : 'inherit',
                   letterSpacing: '0.5px',
@@ -272,7 +272,7 @@ function ProfilePostsList({ posts, reposts, activeTab, navigate }) {
               )}
 
               {/* 文章圖片預覽 - 只在不是轉發文章或者是轉發文章但沒有原始文章時顯示 */}
-              {post.imageUrl && !isRepost && (
+              {((post.imageUrls && post.imageUrls.length > 0) || post.imageUrl) && !isRepost && (
                 <Box mt={2} className="relative" sx={{ 
                   height: '160px', 
                   overflow: 'hidden', 
@@ -294,7 +294,7 @@ function ProfilePostsList({ posts, reposts, activeTab, navigate }) {
                   }
                 }}>
                   <img 
-                    src={post.imageUrl} 
+                    src={post.imageUrls ? post.imageUrls[0] : post.imageUrl} 
                     alt="文章圖片" 
                     className="w-full h-full object-cover transition-transform duration-700 hover:scale-110"
                     style={{ 
@@ -387,14 +387,14 @@ function ProfilePostsList({ posts, reposts, activeTab, navigate }) {
                   </Typography>
 
                   {/* 原文圖片預覽 */}
-                  {originalPost.imageUrl && (
+                  {(originalPost.imageUrls && originalPost.imageUrls.length > 0) || originalPost.imageUrl ? (
                     <Box mt={2} sx={{ 
                       height: '120px', 
                       overflow: 'hidden', 
                       borderRadius: '10px',
                       boxShadow: theme => theme.palette.mode === 'dark' 
-                        ? '0 4px 8px rgba(0,0,0,0.4)' 
-                        : '0 4px 8px rgba(0,0,0,0.15)',
+                        ? '0 4px 8px rgba(0, 0, 0, 0.3), 0 2px 4px rgba(0, 0, 0, 0.2)' 
+                        : '0 4px 8px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.05)',
                       position: 'relative',
                       '&:after': {
                         content: '""',
@@ -410,7 +410,7 @@ function ProfilePostsList({ posts, reposts, activeTab, navigate }) {
                       }
                     }}>
                       <img 
-                        src={originalPost.imageUrl} 
+                        src={originalPost.imageUrls && originalPost.imageUrls.length > 0 ? originalPost.imageUrls[0] : originalPost.imageUrl} 
                         alt="原文圖片" 
                         className="w-full h-full object-cover transition-transform duration-700 hover:scale-110"
                         style={{ 
@@ -418,7 +418,7 @@ function ProfilePostsList({ posts, reposts, activeTab, navigate }) {
                         }}
                       />
                     </Box>
-                  )}
+                  ) : null}
                 </Box>
               )}
             </CardContent>

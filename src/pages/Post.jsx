@@ -288,7 +288,8 @@ function Post() {
         isRepost: true,
         originalPostId: id,
         originalAuthor: post.author?.displayName || '匿名用戶',
-        imageUrl: post.imageUrl || null,
+        // 支持多張圖片
+        imageUrls: post.imageUrls || (post.imageUrl ? [post.imageUrl] : []),
         category: post.category || post.topic || 'other'
       };
 
