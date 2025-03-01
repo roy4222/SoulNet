@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { db } from '../utils/firebase';
-import { collection, getDocs, doc, getDoc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc, updateDoc, deleteDoc, query, where } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
 import LoadingState from '../components/UI/LoadingState';
 import SuccessMessage from '../components/UI/SuccessMessage';
@@ -151,10 +151,42 @@ function AdminPanel() {
   const handleDeletePost = async (postId) => {
     if (window.confirm('確定要刪除這篇文章嗎？此操作無法撤銷。')) {
       try {
+        // 1. 先獲取文章數據，以便獲取圖片URL
+        const postDoc = await getDoc(doc(db, 'posts', postId));
+        if (!postDoc.exists()) {
+          throw new Error('文章不存在');
+        }
+        
+        const postData = postDoc.data();
+        
+        // 2. 記錄需要刪除的圖片 URL（但不從前端刪除）
+        const imageUrls = postData.imageUrls?.length > 0 ? postData.imageUrls : (postData.imageUrl ? [postData.imageUrl] : []);
+        
+        if (imageUrls.length > 0) {
+          console.log('需要刪除的圖片 URL:', imageUrls);
+          // 注意：從前端直接刪除 R2 圖片會遇到 CORS 和安全憑證問題
+          // 需要設置後端 API 或 Cloud Functions 來處理圖片刪除
+        }
+
+        // 3. 查詢並刪除所有相關的轉發文章
+        const repostsQuery = query(collection(db, 'posts'), where('originalPostId', '==', postId));
+        const repostsSnapshot = await getDocs(repostsQuery);
+        
+        // 刪除所有轉發文章
+        const deleteRepostsPromises = repostsSnapshot.docs.map(doc => deleteDoc(doc.ref));
+        await Promise.all(deleteRepostsPromises);
+        console.log(`已刪除 ${repostsSnapshot.docs.length} 篇相關轉發文章`);
+        
+        // 4. 最後刪除原文章
         await deleteDoc(doc(db, 'posts', postId));
         
-        // 更新本地狀態
-        setPosts(prevPosts => prevPosts.filter(post => post.id !== postId));
+        // 5. 更新本地狀態 - 包括刪除相關的轉發文章
+        setPosts(prevPosts => {
+          // 先過濾掉原文章
+          const filteredPosts = prevPosts.filter(post => post.id !== postId);
+          // 再過濾掉所有相關的轉發文章
+          return filteredPosts.filter(post => post.originalPostId !== postId);
+        });
         
         setSuccessMessage('文章已成功刪除');
         setShowSuccess(true);

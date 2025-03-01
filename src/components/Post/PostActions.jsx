@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { doc, deleteDoc } from 'firebase/firestore';
+import { doc, deleteDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../../utils/firebase';
 import { useAuth } from '../../contexts/AuthContext';
 import { FiEdit, FiTrash2, FiMoreVertical } from 'react-icons/fi';
@@ -25,6 +25,25 @@ function PostActions({ post, onEdit }) {
 
     if (window.confirm('確定要刪除這篇文章嗎？此操作無法撤銷。')) {
       try {
+        // 1. 記錄需要刪除的圖片 URL（但不從前端刪除）
+        const imageUrls = post.imageUrls?.length > 0 ? post.imageUrls : (post.imageUrl ? [post.imageUrl] : []);
+        
+        if (imageUrls.length > 0) {
+          console.log('需要刪除的圖片 URL:', imageUrls);
+          // 注意：從前端直接刪除 R2 圖片會遇到 CORS 和安全憑證問題
+          // 需要設置後端 API 或 Cloud Functions 來處理圖片刪除
+        }
+
+        // 2. 查詢並刪除所有相關的轉發文章
+        const repostsQuery = query(collection(db, 'posts'), where('originalPostId', '==', post.id));
+        const repostsSnapshot = await getDocs(repostsQuery);
+        
+        // 刪除所有轉發文章
+        const deleteRepostsPromises = repostsSnapshot.docs.map(doc => deleteDoc(doc.ref));
+        await Promise.all(deleteRepostsPromises);
+        console.log(`已刪除 ${repostsSnapshot.docs.length} 篇相關轉發文章`);
+
+        // 3. 最後刪除原文章
         await deleteDoc(doc(db, 'posts', post.id));
         alert('文章已成功刪除');
         navigate('/');
