@@ -6,7 +6,10 @@ import {
   createUserWithEmailAndPassword,
   signOut,
   onAuthStateChanged,
-  updateProfile
+  updateProfile,
+  updatePassword,
+  EmailAuthProvider,
+  reauthenticateWithCredential
 } from 'firebase/auth';
 import { getFirestore, doc, getDoc } from 'firebase/firestore';
 
@@ -56,6 +59,45 @@ export function AuthProvider({ children }) {
     return userRole === 'admin';
   };
 
+  // 重新驗證用戶
+  const reauthenticateUser = async (currentPassword) => {
+    try {
+      if (!currentUser) {
+        throw new Error('沒有登入的用戶');
+      }
+      
+      const credential = EmailAuthProvider.credential(
+        currentUser.email,
+        currentPassword
+      );
+      
+      await reauthenticateWithCredential(currentUser, credential);
+      return true;
+    } catch (error) {
+      console.error('重新驗證失敗:', error);
+      throw error;
+    }
+  };
+
+  // 更新用戶密碼
+  const updateUserPassword = async (currentPassword, newPassword) => {
+    try {
+      if (!currentUser) {
+        throw new Error('沒有登入的用戶');
+      }
+      
+      // 先重新驗證用戶
+      await reauthenticateUser(currentPassword);
+      
+      // 更新密碼
+      await updatePassword(currentUser, newPassword);
+      return true;
+    } catch (error) {
+      console.error('更新密碼失敗:', error);
+      throw error;
+    }
+  };
+
   // 使用 useEffect 監聽用戶身份驗證狀態變化
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -93,6 +135,8 @@ export function AuthProvider({ children }) {
     register,
     login,
     logout,
+    reauthenticateUser,
+    updateUserPassword,
     loading
   };
 

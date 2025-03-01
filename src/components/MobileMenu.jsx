@@ -157,13 +157,22 @@ export default function MobileMenu({
                                 {user && isAdmin() && (
                                     <Link
                                         to={ROUTES.ADMIN}
-                                        className="block text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 px-4 py-2 rounded-lg transition-colors duration-200"
+                                        className="block px-4 py-2 text-sm text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900"
                                         onClick={onClose}
                                     >
                                         管理員面板
                                     </Link>
                                 )}
                             </div>
+
+                             {/* 重設密碼連結 */}
+                             <Link
+                                to={ROUTES.RESET_PASSWORD}
+                                className="block px-4 py-2 text-sm text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900"
+                                onClick={onClose}
+                            >
+                                重設密碼
+                            </Link>
 
                             {/* 主題切換按鈕：根據當前模式顯示不同圖標和文字 */}
                             <button
@@ -189,6 +198,8 @@ export default function MobileMenu({
                                     </>
                                 )}
                             </button>
+
+                           
 
                             {/* 底部選項：僅在用戶登入時顯示登出按鈕 */}
                             {user && (

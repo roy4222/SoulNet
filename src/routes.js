@@ -7,6 +7,7 @@ import Post from './pages/Post';
 import Profile from './pages/Profile';
 import EditPost from './pages/EditPost';
 import AdminPanel from './pages/AdminPanel';
+import ResetPassword from './pages/ResetPassword';
 
 // 定義路由路徑常量
 export const ROUTES = {
@@ -17,7 +18,8 @@ export const ROUTES = {
     POST_DETAIL: '/post/:id',
     EDIT_POST: '/edit-post/:id',
     PROFILE: '/profile',
-    ADMIN: '/admin'
+    ADMIN: '/admin',
+    RESET_PASSWORD: '/reset-password'
 };
 
 // 定義路由配置
@@ -61,6 +63,11 @@ export const routes = [
         path: ROUTES.ADMIN,
         element: AdminPanel,
         title: '管理員面板'
+    },
+    {
+        path: ROUTES.RESET_PASSWORD,
+        element: ResetPassword,
+        title: '重設密碼'
     }
 ];
 
