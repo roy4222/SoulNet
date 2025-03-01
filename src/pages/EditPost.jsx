@@ -199,8 +199,8 @@ function EditPost() {
       const totalImages = currentImages.length + images.length + files.length;
       
       // 檢查添加新圖片後總數是否超過限制
-      if (totalImages > 10) {
-        setUploadError('最多只能上傳10張圖片');
+      if (totalImages > 20) {
+        setUploadError('最多只能上傳20張圖片');
         return;
       }
 

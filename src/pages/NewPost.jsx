@@ -91,8 +91,8 @@ export default function NewPost() {
         const files = Array.from(e.target.files);
         if (files.length > 0) {
             // 檢查添加新圖片後總數是否超過限制
-            if (images.length + files.length > 10) {
-                setError('最多只能上傳10張圖片');
+            if (images.length + files.length > 20) {
+                setError('最多只能上傳20張圖片');
                 return;
             }
 
