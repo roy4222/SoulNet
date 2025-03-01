@@ -1,15 +1,20 @@
+// 引入 React 庫
 import React from 'react';
 
+// UserManagement 組件：用於管理用戶列表和角色
 function UserManagement({ filteredUsers, currentUser, handleUpdateUserRole }) {
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
+      {/* 如果沒有找到用戶，顯示提示信息 */}
       {filteredUsers.length === 0 ? (
         <div className="p-6 text-center">
           <p className="text-gray-500 dark:text-gray-400">沒有找到符合條件的用戶</p>
         </div>
       ) : (
+        // 如果有用戶，顯示用戶列表
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+            {/* 表格頭部 */}
             <thead className="bg-gray-50 dark:bg-gray-700">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">用戶</th>
@@ -19,9 +24,12 @@ function UserManagement({ filteredUsers, currentUser, handleUpdateUserRole }) {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">操作</th>
               </tr>
             </thead>
+            {/* 表格主體 */}
             <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+              {/* 遍歷過濾後的用戶列表 */}
               {filteredUsers.map(user => (
                 <tr key={user.id}>
+                  {/* 用戶頭像和名稱 */}
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <div className="flex-shrink-0 h-10 w-10">
@@ -32,9 +40,11 @@ function UserManagement({ filteredUsers, currentUser, handleUpdateUserRole }) {
                       </div>
                     </div>
                   </td>
+                  {/* 用戶郵箱 */}
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-500 dark:text-gray-400">{user.email}</div>
                   </td>
+                  {/* 用戶角色 */}
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
                       user.role === 'admin' 
@@ -44,10 +54,13 @@ function UserManagement({ filteredUsers, currentUser, handleUpdateUserRole }) {
                       {user.role === 'admin' ? '管理員' : '會員'}
                     </span>
                   </td>
+                  {/* 用戶註冊時間 */}
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                     {user.createdAt?.toDate ? user.createdAt.toDate().toLocaleString('zh-TW') : '未知'}
                   </td>
+                  {/* 操作按鈕 */}
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    {/* 不允許修改當前用戶的角色 */}
                     {user.id !== currentUser.uid && (
                       <button
                         onClick={() => handleUpdateUserRole(user.id, user.role === 'admin' ? 'user' : 'admin')}
@@ -71,4 +84,5 @@ function UserManagement({ filteredUsers, currentUser, handleUpdateUserRole }) {
   );
 }
 
+// 導出 UserManagement 組件
 export default UserManagement;
