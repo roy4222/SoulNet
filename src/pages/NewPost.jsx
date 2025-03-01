@@ -149,18 +149,22 @@ export default function NewPost() {
         const { index: draggedIndex } = draggedItem;
         const { index: draggedOverIndex } = draggedOverItem;
 
-        // 移動圖片和預覽
-        const newImages = [...images];
-        const draggedImage = newImages[draggedIndex];
-        newImages.splice(draggedIndex, 1);
-        newImages.splice(draggedOverIndex, 0, draggedImage);
-        setImages(newImages);
+        // 確保索引在有效範圍內
+        if (draggedIndex >= 0 && draggedIndex < images.length && 
+            draggedOverIndex >= 0 && draggedOverIndex < images.length) {
+            // 移動圖片和預覽
+            const newImages = [...images];
+            const draggedImage = newImages[draggedIndex];
+            newImages.splice(draggedIndex, 1);
+            newImages.splice(draggedOverIndex, 0, draggedImage);
+            setImages(newImages);
 
-        const newPreviews = [...imagePreviews];
-        const draggedPreview = newPreviews[draggedIndex];
-        newPreviews.splice(draggedIndex, 1);
-        newPreviews.splice(draggedOverIndex, 0, draggedPreview);
-        setImagePreviews(newPreviews);
+            const newPreviews = [...imagePreviews];
+            const draggedPreview = newPreviews[draggedIndex];
+            newPreviews.splice(draggedIndex, 1);
+            newPreviews.splice(draggedOverIndex, 0, draggedPreview);
+            setImagePreviews(newPreviews);
+        }
 
         setDraggedItem(null);
         setDraggedOverItem(null);

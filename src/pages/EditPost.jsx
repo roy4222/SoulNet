@@ -294,46 +294,66 @@ function EditPost() {
     // 創建新的圖片預覽數組
     let newImagePreviews = [...imagePreviews];
     
-    // 計算實際索引
+    // 計算在 imagePreviews 中的實際索引
     let actualDraggedIndex = isDraggedCurrent ? draggedIndex : currentImages.length + draggedIndex;
     let actualDraggedOverIndex = isDraggedOverCurrent ? draggedOverIndex : currentImages.length + draggedOverIndex;
 
-    // 移動預覽圖片
-    const draggedPreview = newImagePreviews[actualDraggedIndex];
-    newImagePreviews.splice(actualDraggedIndex, 1);
-    newImagePreviews.splice(actualDraggedOverIndex, 0, draggedPreview);
-    setImagePreviews(newImagePreviews);
+    // 確保索引在有效範圍內
+    if (actualDraggedIndex >= 0 && actualDraggedIndex < imagePreviews.length && 
+        actualDraggedOverIndex >= 0 && actualDraggedOverIndex < imagePreviews.length) {
+      // 移動預覽圖片
+      const draggedPreview = newImagePreviews[actualDraggedIndex];
+      newImagePreviews.splice(actualDraggedIndex, 1);
+      newImagePreviews.splice(actualDraggedOverIndex, 0, draggedPreview);
+      setImagePreviews(newImagePreviews);
 
-    // 更新實際圖片數組
-    if (isDraggedCurrent && isDraggedOverCurrent) {
-      // 兩者都是現有圖片
-      const newCurrentImages = [...currentImages];
-      const draggedImage = newCurrentImages[draggedIndex];
-      newCurrentImages.splice(draggedIndex, 1);
-      newCurrentImages.splice(draggedOverIndex, 0, draggedImage);
-      setCurrentImages(newCurrentImages);
-    } else if (!isDraggedCurrent && !isDraggedOverCurrent) {
-      // 兩者都是新上傳圖片
-      const newImages = [...images];
-      const draggedImage = newImages[draggedIndex];
-      newImages.splice(draggedIndex, 1);
-      newImages.splice(draggedOverIndex, 0, draggedImage);
-      setImages(newImages);
-    } else {
-      // 一個是現有圖片，一個是新上傳圖片
-      // 這種情況比較複雜，需要在兩個數組之間移動
-      if (isDraggedCurrent) {
-        // 從現有圖片移動到新上傳圖片
+      // 更新實際圖片數組
+      if (isDraggedCurrent && isDraggedOverCurrent) {
+        // 兩者都是現有圖片
         const newCurrentImages = [...currentImages];
         const draggedImage = newCurrentImages[draggedIndex];
         newCurrentImages.splice(draggedIndex, 1);
+        newCurrentImages.splice(draggedOverIndex, 0, draggedImage);
         setCurrentImages(newCurrentImages);
-      } else {
-        // 從新上傳圖片移動到現有圖片
+      } else if (!isDraggedCurrent && !isDraggedOverCurrent) {
+        // 兩者都是新上傳圖片
         const newImages = [...images];
         const draggedImage = newImages[draggedIndex];
         newImages.splice(draggedIndex, 1);
+        newImages.splice(draggedOverIndex, 0, draggedImage);
         setImages(newImages);
+      } else {
+        // 一個是現有圖片，一個是新上傳圖片
+        if (isDraggedCurrent) {
+          // 從現有圖片移動到新上傳圖片
+          const newCurrentImages = [...currentImages];
+          const draggedImage = newCurrentImages[draggedIndex];
+          newCurrentImages.splice(draggedIndex, 1);
+          setCurrentImages(newCurrentImages);
+          
+          // 添加到新上傳圖片
+          const newImages = [...images];
+          newImages.splice(draggedOverIndex, 0, { 
+            name: `moved-image-${Date.now()}`,
+            type: 'image/jpeg',
+            _isFromCurrentImages: true,
+            _originalUrl: draggedImage
+          });
+          setImages(newImages);
+        } else {
+          // 從新上傳圖片移動到現有圖片
+          const newImages = [...images];
+          const draggedImage = newImages[draggedIndex];
+          newImages.splice(draggedIndex, 1);
+          setImages(newImages);
+          
+          // 添加到現有圖片
+          const newCurrentImages = [...currentImages];
+          // 如果是從新上傳的圖片移動過來的，我們需要使用預覽URL
+          const previewUrl = imagePreviews[actualDraggedIndex];
+          newCurrentImages.splice(draggedOverIndex, 0, previewUrl);
+          setCurrentImages(newCurrentImages);
+        }
       }
     }
 
