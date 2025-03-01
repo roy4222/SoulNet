@@ -27,7 +27,7 @@ function ImageUploader({ onDragOver, onDrop, onChange, isDisabled }) {
             <span className="font-semibold">點擊上傳</span> 或拖放圖片
           </p>
           {/* 檔案格式與限制說明 */}
-          <p className="text-xs text-gray-500 dark:text-gray-400">PNG, JPG, GIF (最多10張，每張最大 5MB)</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">PNG, JPG, GIF (最多20張，每張最大 5MB)</p>
         </div>
         {/* 隱藏的檔案輸入框 */}
         <input

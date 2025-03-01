@@ -276,14 +276,14 @@ export default function NewPost() {
             {/* 圖片上傳區域 */}
             <div className="mb-6">
                 <label className="block text-lg font-semibold text-gray-800 dark:text-gray-200 mb-2">
-                    上傳圖片(可選，最多10張)
+                    上傳圖片(可選，最多20張)
                 </label>
                 
                 <ImageUploader 
                     onDragOver={handleFileDragOver}
                     onDrop={handleDrop}
                     onChange={handleImagesChange}
-                    isDisabled={loading || images.length >= 10}
+                    isDisabled={loading || images.length >= 20}
                 />
                 
                 {error && <p className="mt-2 text-sm text-red-600 dark:text-red-400">{error}</p>}

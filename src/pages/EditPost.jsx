@@ -467,14 +467,14 @@ function EditPost() {
           {/* 圖片上傳區域 */}
           <div className="mb-6">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              文章圖片 (可選，最多10張)
+              文章圖片 (可選，最多20張)
             </label>
             
             <ImageUploader 
               onDragOver={handleFileDragOver}
               onDrop={handleDrop}
               onChange={handleImagesChange}
-              isDisabled={isUploading || (currentImages.length + images.length) >= 10}
+              isDisabled={isUploading || (currentImages.length + images.length) >= 20}
             />
             
             {uploadError && (
