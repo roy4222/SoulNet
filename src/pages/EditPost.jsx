@@ -1,35 +1,29 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { db, storage } from '../utils/firebase';
+import { db, r2Client } from '../utils/firebase';
 import { doc, getDoc, updateDoc, Timestamp, collection, getDocs } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
-import { PutObjectCommand } from "@aws-sdk/client-s3";
-import { v4 as uuidv4 } from 'uuid';
-import { r2Client } from '../utils/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import BackButton from '../components/UI/BackButton';
 import LoadingState from '../components/UI/LoadingState';
 import SuccessMessage from '../components/UI/SuccessMessage';
+import ImageUploader from '../components/Post/ImageUploader';
+import ImagePreviewList from '../components/Post/ImagePreviewList';
+import PostForm from '../components/Post/PostForm';
+import { uploadImageToR2 } from '../utils/imageUtils';
 
-// 獲取文件的ContentType
-const getContentType = (file) => {
-  const extension = file.name.split('.').pop().toLowerCase();
-  const types = {
-    'png': 'image/png',
-    'jpg': 'image/jpeg',
-    'jpeg': 'image/jpeg',
-    'gif': 'image/gif',
-    'webp': 'image/webp'
-  };
-  return types[extension] || file.type;
-};
-
+/**
+ * 編輯文章頁面組件
+ * 允許用戶編輯現有文章的標題、內容、分類和圖片
+ */
 function EditPost() {
+  // 從URL參數中獲取文章ID
   const { id } = useParams();
   const navigate = useNavigate();
-  const { currentUser, userRole, isAdmin } = useAuth();
+  // 獲取當前用戶和管理員狀態
+  const { currentUser, isAdmin } = useAuth();
   
+  // 文章基本信息狀態
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [category, setCategory] = useState('other');
@@ -48,17 +42,23 @@ function EditPost() {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState('');
 
-  // 新增拖拽相關狀態
+  // 拖拽相關狀態
   const [draggedItem, setDraggedItem] = useState(null);
   const [draggedOverItem, setDraggedOverItem] = useState(null);
 
-  // 將原本的 handleDragOver 函數重命名為 handleFileDragOver
+  /**
+   * 處理檔案拖拽區域的拖拽事件
+   * 防止瀏覽器默認行為
+   */
   const handleFileDragOver = (e) => {
     e.preventDefault();
     e.stopPropagation();
   };
 
-  // 處理檔案拖放
+  /**
+   * 處理檔案拖放
+   * 當用戶拖放檔案到上傳區域時觸發
+   */
   const handleDrop = (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -74,7 +74,10 @@ function EditPost() {
     }
   };
 
-  // 處理貼上事件
+  /**
+   * 處理貼上事件
+   * 允許用戶直接從剪貼板貼上圖片
+   */
   const handlePaste = (e) => {
     // 如果正在加載中，則不處理
     if (isUploading) return;
@@ -95,7 +98,10 @@ function EditPost() {
     }
   };
 
-  // 在組件掛載時添加貼上事件監聽器
+  /**
+   * 在組件掛載時添加貼上事件監聽器
+   * 在組件卸載時移除監聽器
+   */
   useEffect(() => {
     document.addEventListener('paste', handlePaste);
     return () => {
@@ -103,7 +109,10 @@ function EditPost() {
     };
   }, [isUploading]);
 
-  // 從 Firebase 獲取分類數據
+  /**
+   * 從 Firebase 獲取分類數據
+   * 在組件掛載時執行一次
+   */
   useEffect(() => {
     const fetchCategories = async () => {
       const categoriesRef = collection(db, 'topics');
@@ -118,7 +127,11 @@ function EditPost() {
     fetchCategories();
   }, []);
 
-  // 檢查當前用戶是否有權限編輯此文章
+  /**
+   * 檢查當前用戶是否有權限編輯此文章
+   * @param {Object} postData - 文章數據
+   * @returns {boolean} - 是否有編輯權限
+   */
   const checkPermission = (postData) => {
     // 管理員可以編輯任何文章
     if (isAdmin()) return true;
@@ -127,7 +140,10 @@ function EditPost() {
     return currentUser && postData.author && postData.author.uid === currentUser.uid;
   };
   
-  // 獲取文章數據
+  /**
+   * 獲取文章數據
+   * 在組件掛載和ID、用戶或管理員狀態變化時執行
+   */
   useEffect(() => {
     const fetchPost = async () => {
       try {
@@ -172,7 +188,10 @@ function EditPost() {
     fetchPost();
   }, [id, currentUser, isAdmin]);
   
-  // 處理圖片選擇
+  /**
+   * 處理圖片選擇
+   * 當用戶選擇新圖片時觸發
+   */
   const handleImagesChange = (e) => {
     const files = Array.from(e.target.files);
     if (files.length > 0) {
@@ -212,7 +231,10 @@ function EditPost() {
     }
   };
   
-  // 移除新上傳的圖片
+  /**
+   * 移除新上傳的圖片
+   * @param {number} index - 要移除的圖片索引
+   */
   const handleRemoveNewImage = (index) => {
     // 計算在 imagePreviews 中的實際索引
     const actualIndex = currentImages.length + index;
@@ -224,7 +246,10 @@ function EditPost() {
     setImagePreviews(prevPreviews => prevPreviews.filter((_, i) => i !== actualIndex));
   };
   
-  // 移除現有圖片
+  /**
+   * 移除現有圖片
+   * @param {number} index - 要移除的圖片索引
+   */
   const handleRemoveCurrentImage = (index) => {
     // 從 currentImages 中移除
     setCurrentImages(prevImages => prevImages.filter((_, i) => i !== index));
@@ -233,37 +258,12 @@ function EditPost() {
     setImagePreviews(prevPreviews => prevPreviews.filter((_, i) => i !== index));
   };
   
-  // 上傳圖片到 R2
-  const uploadImageToR2 = async (file) => {
-    const fileExtension = file.name.split('.').pop();
-    const fileName = `${uuidv4()}.${fileExtension}`;
-    
-    try {
-      // 將File轉換為ArrayBuffer
-      const buffer = await file.arrayBuffer();
-
-      const command = new PutObjectCommand({
-        Bucket: import.meta.env.VITE_R2_BUCKET,
-        Key: fileName,
-        Body: buffer,
-        ContentType: getContentType(file),
-        CacheControl: 'public, max-age=31536000',
-      });
-
-      await r2Client.send(command);
-      
-      // 使用Cloudflare R2的公開訪問URL
-      const endpoint = import.meta.env.VITE_R2_ENDPOINT;
-      const publicUrl = `https://${endpoint}/${fileName}`;
-      console.log('生成的publicUrl:', publicUrl);
-      return publicUrl;
-    } catch (error) {
-      console.error('上傳圖片失敗:', error);
-      throw error;
-    }
-  };
-  
-  // 處理拖拽開始
+  /**
+   * 處理拖拽開始
+   * @param {Event} e - 拖拽事件
+   * @param {number} index - 被拖拽項目的索引
+   * @param {boolean} isCurrentImage - 是否為現有圖片
+   */
   const handleDragStart = (e, index, isCurrentImage) => {
     // 設置拖拽項目的索引和類型
     setDraggedItem({ index, isCurrentImage });
@@ -275,7 +275,10 @@ function EditPost() {
     e.dataTransfer.setDragImage(dragImage, 0, 0);
   };
 
-  // 處理拖拽結束
+  /**
+   * 處理拖拽結束
+   * 重新排序圖片
+   */
   const handleDragEnd = () => {
     // 如果沒有拖拽項目或拖拽目標，則不執行任何操作
     if (!draggedItem || !draggedOverItem) {
@@ -325,19 +328,12 @@ function EditPost() {
         const draggedImage = newCurrentImages[draggedIndex];
         newCurrentImages.splice(draggedIndex, 1);
         setCurrentImages(newCurrentImages);
-        
-        // 由於是URL而不是File對象，我們不能直接添加到images數組
-        // 但我們可以更新預覽，並在提交時處理
-        // 這裡我們只需確保預覽順序正確
       } else {
         // 從新上傳圖片移動到現有圖片
         const newImages = [...images];
         const draggedImage = newImages[draggedIndex];
         newImages.splice(draggedIndex, 1);
         setImages(newImages);
-        
-        // 同樣，我們不能直接將File對象添加到currentImages
-        // 但我們可以確保預覽順序正確
       }
     }
 
@@ -346,7 +342,12 @@ function EditPost() {
     setDraggedOverItem(null);
   };
 
-  // 處理拖拽進入
+  /**
+   * 處理拖拽進入
+   * @param {Event} e - 拖拽事件
+   * @param {number} index - 目標項目的索引
+   * @param {boolean} isCurrentImage - 是否為現有圖片
+   */
   const handleDragOver = (e, index, isCurrentImage) => {
     e.preventDefault();
     e.stopPropagation();
@@ -362,7 +363,10 @@ function EditPost() {
     setDraggedOverItem({ index, isCurrentImage });
   };
 
-  // 處理表單提交
+  /**
+   * 處理表單提交
+   * 上傳圖片並更新文章
+   */
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -374,7 +378,7 @@ function EditPost() {
       const newImageUrls = [];
       if (images.length > 0) {
         // 並行上傳所有新圖片
-        const uploadPromises = images.map(image => uploadImageToR2(image));
+        const uploadPromises = images.map(image => uploadImageToR2(image, r2Client));
         const urls = await Promise.all(uploadPromises);
         newImageUrls.push(...urls);
       }
@@ -420,9 +424,10 @@ function EditPost() {
         updateData.imageUrls = [];
       }
       
+      // 更新文章到Firestore
       await updateDoc(doc(db, 'posts', id), updateData);
       
-      // 顯示成功訊息
+      // 顯示成功訊息並導航回文章頁面
       setShowSuccess(true);
       setTimeout(() => {
         navigate(`/post/${id}`);
@@ -459,204 +464,59 @@ function EditPost() {
         >
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">編輯文章</h1>
           
-          <form onSubmit={handleSubmit}>
-            {/* 標題輸入 */}
-            <div className="mb-4">
-              <label htmlFor="title" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                標題 (可選)
-              </label>
-              <input
-                type="text"
-                id="title"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-                placeholder="請輸入文章標題"
-              />
-            </div>
+          {/* 圖片上傳區域 */}
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              文章圖片 (可選，最多10張)
+            </label>
             
-            {/* 分類選擇 */}
-            <div className="mb-4">
-              <label htmlFor="category" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                分類 <span className="text-red-500">*</span>
-              </label>
-              <select
-                id="category"
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-                required
-              >
-                {categories.map((cat) => (
-                  <option key={cat.id} value={cat.id}>
-                    {cat.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <ImageUploader 
+              onDragOver={handleFileDragOver}
+              onDrop={handleDrop}
+              onChange={handleImagesChange}
+              isDisabled={isUploading || (currentImages.length + images.length) >= 10}
+            />
             
-            {/* 圖片上傳 */}
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                文章圖片 (可選，最多10張)
-              </label>
-              
-              {/* 圖片上傳區域 */}
-              <div className="flex items-center justify-center w-full">
-                <label 
-                  htmlFor="images" 
-                  className="flex flex-col items-center justify-center w-full h-64 border-2 border-gray-300 dark:border-gray-600 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700" 
-                  onDragOver={handleFileDragOver}
-                  onDrop={handleDrop}
-                >
-                  <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                    <svg className="w-10 h-10 mb-3 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
-                    </svg>
-                    <p className="mb-2 text-sm text-gray-500 dark:text-gray-400">
-                      <span className="font-semibold">點擊上傳</span> 或拖放圖片
-                    </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">PNG, JPG, GIF (最多10張，每張最大 5MB)</p>
-                  </div>
-                  <input
-                    id="images"
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImagesChange}
-                    className="hidden"
-                    disabled={isUploading || (currentImages.length + images.length) >= 10}
-                    multiple
-                  />
-                </label>
-              </div>
-              
-              {uploadError && (
-                <p className="mt-2 text-sm text-red-500">{uploadError}</p>
-              )}
-              
-              {/* 圖片預覽區域 */}
-              {imagePreviews.length > 0 && (
-                <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-4">
-                  {/* 現有圖片預覽 */}
-                  {currentImages.map((imageUrl, index) => (
-                    <div 
-                      key={`current-${index}`} 
-                      className={`relative group border-2 ${draggedOverItem && draggedOverItem.index === index && draggedOverItem.isCurrentImage ? 'border-blue-500' : 'border-transparent'}`}
-                      draggable
-                      onDragStart={(e) => handleDragStart(e, index, true)}
-                      onDragEnd={handleDragEnd}
-                      onDragOver={(e) => handleDragOver(e, index, true)}
-                    >
-                      <img 
-                        src={imageUrl} 
-                        alt={`現有圖片 ${index + 1}`} 
-                        className="w-full h-32 object-cover rounded-lg cursor-move"
-                      />
-                      <div className="absolute top-2 left-2 bg-black bg-opacity-50 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 11.5V14m0-2.5v-6a2.5 2.5 0 015 0v6a2.5 2.5 0 01-5 0z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 17l-5-5m0 0l5-5m-5 5h12" />
-                        </svg>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveCurrentImage(index)}
-                        className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </button>
-                    </div>
-                  ))}
-                  
-                  {/* 新上傳圖片預覽 */}
-                  {images.map((_, index) => {
-                    const previewIndex = currentImages.length + index;
-                    return (
-                      <div 
-                        key={`new-${index}`} 
-                        className={`relative group border-2 ${draggedOverItem && draggedOverItem.index === index && !draggedOverItem.isCurrentImage ? 'border-blue-500' : 'border-transparent'}`}
-                        draggable
-                        onDragStart={(e) => handleDragStart(e, index, false)}
-                        onDragEnd={handleDragEnd}
-                        onDragOver={(e) => handleDragOver(e, index, false)}
-                      >
-                        <img 
-                          src={imagePreviews[previewIndex]} 
-                          alt={`新上傳圖片 ${index + 1}`} 
-                          className="w-full h-32 object-cover rounded-lg cursor-move"
-                        />
-                        <div className="absolute top-2 left-2 bg-black bg-opacity-50 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 11.5V14m0-2.5v-6a2.5 2.5 0 015 0v6a2.5 2.5 0 01-5 0z" />
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 17l-5-5m0 0l5-5m-5 5h12" />
-                          </svg>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveNewImage(index)}
-                          className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                          </svg>
-                        </button>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-            
-            {/* 拖拽提示 */}
-            {imagePreviews.length > 1 && (
-              <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                提示：您可以拖拽圖片來調整順序
-              </p>
+            {uploadError && (
+              <p className="mt-2 text-sm text-red-500">{uploadError}</p>
             )}
             
-            {/* 內容輸入 */}
-            <div className="mb-6">
-              <label htmlFor="content" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                內容 (可選)
-              </label>
-              <textarea
-                id="content"
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white min-h-[200px]"
-                placeholder="請輸入文章內容"
+            {/* 圖片預覽區域 */}
+            {imagePreviews.length > 0 && (
+              <ImagePreviewList 
+                currentImages={currentImages}
+                images={images}
+                imagePreviews={imagePreviews}
+                draggedOverItem={draggedOverItem}
+                onDragStart={handleDragStart}
+                onDragEnd={handleDragEnd}
+                onDragOver={handleDragOver}
+                onRemoveCurrentImage={handleRemoveCurrentImage}
+                onRemoveNewImage={handleRemoveNewImage}
               />
-            </div>
-            
-            {/* 提交按鈕 */}
-            <div className="flex justify-end">
-              <button
-                type="button"
-                onClick={() => navigate(`/post/${id}`)}
-                className="mr-2 px-6 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                disabled={isUploading}
-              >
-                取消
-              </button>
-              <button
-                type="submit"
-                className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-blue-400 disabled:cursor-not-allowed"
-                disabled={isUploading}
-              >
-                {isUploading ? (
-                  <span className="flex items-center">
-                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    處理中...
-                  </span>
-                ) : '更新文章'}
-              </button>
-            </div>
-          </form>
+            )}
+          </div>
+          
+          {/* 拖拽提示 */}
+          {imagePreviews.length > 1 && (
+            <p className="mt-2 text-sm text-gray-500 dark:text-gray-400 mb-4">
+              提示：您可以拖拽圖片來調整順序
+            </p>
+          )}
+          
+          {/* 文章表單 */}
+          <PostForm 
+            title={title}
+            setTitle={setTitle}
+            content={content}
+            setContent={setContent}
+            category={category}
+            setCategory={setCategory}
+            categories={categories}
+            onSubmit={handleSubmit}
+            onCancel={() => navigate(`/post/${id}`)}
+            isUploading={isUploading}
+          />
         </motion.div>
         
         {/* 成功訊息 */}
