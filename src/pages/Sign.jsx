@@ -32,6 +32,7 @@ const Sign = () => {
         navigate('/');
       }, 1000);
     } catch (error) {
+      console.error('登入錯誤:', error.code, error.message);
       // 處理不同類型的錯誤
       switch (error.code) {
         case 'auth/invalid-email':
@@ -46,8 +47,17 @@ const Sign = () => {
         case 'auth/wrong-password':
           setError('密碼錯誤');
           break;
+        case 'auth/invalid-credential':
+          setError('無效的登入憑證，請檢查您的電子郵件和密碼');
+          break;
+        case 'auth/too-many-requests':
+          setError('登入嘗試次數過多，請稍後再試');
+          break;
+        case 'auth/network-request-failed':
+          setError('網絡連接失敗，請檢查您的網絡連接');
+          break;
         default:
-          setError('登入失敗，請稍後再試');
+          setError(`登入失敗：${error.message}`);
       }
     } finally {
       setLoading(false);
