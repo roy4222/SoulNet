@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { db } from '../utils/firebase';
 import { collection, getDocs, doc, getDoc, updateDoc, arrayUnion, arrayRemove, addDoc, Timestamp } from 'firebase/firestore';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import PostInteractionButtons from '../components/Post/PostInteractionButtons';
 import ScrollToTopButton from '../components/ScrollToTopButton';
@@ -39,8 +39,21 @@ function HomePage() {
   const [expandedPosts, setExpandedPosts] = useState({}); // 追蹤文章展開狀態
   const [isImageModalOpen, setIsImageModalOpen] = useState(false); // 控制圖片 modal 的開關狀態
   const [selectedImage, setSelectedImage] = useState(null); // 當前選中的圖片 URL
+  const [searchQuery, setSearchQuery] = useState(''); // 搜尋關鍵字狀態
   const navigate = useNavigate();
+  const location = useLocation(); // 用於獲取 URL 查詢參數
   const { currentUser } = useAuth();
+
+  // 從 URL 查詢參數獲取搜尋關鍵字
+  useEffect(() => {
+    const queryParams = new URLSearchParams(location.search);
+    const search = queryParams.get('search');
+    if (search) {
+      setSearchQuery(search);
+    } else {
+      setSearchQuery(''); // 如果沒有搜尋參數，清空搜尋關鍵字
+    }
+  }, [location.search]);
 
   // 切換文章展開狀態的函數
   const togglePostExpansion = (postId) => {
@@ -307,11 +320,26 @@ function HomePage() {
     fetchPosts();
   }, []); // 空依賴數組意味著這個效果只在組件掛載時運行一次
 
-  // 根據選中的分類過濾文章
+  // 根據選中的分類和搜尋關鍵字過濾文章
   const filteredPosts = posts.filter(post => {
-    if (selectedCategory === 'all') return true;
-    // 同時支援新舊格式的分類字段
-    return post.category === selectedCategory || post.topic === selectedCategory;
+    // 先根據分類過濾
+    const categoryMatch = selectedCategory === 'all' || 
+                          post.category === selectedCategory || 
+                          post.topic === selectedCategory;
+    
+    // 如果沒有搜尋關鍵字，只根據分類過濾
+    if (!searchQuery.trim()) {
+      return categoryMatch;
+    }
+    
+    // 如果有搜尋關鍵字，同時根據分類和搜尋關鍵字過濾
+    const query = searchQuery.toLowerCase().trim();
+    const titleMatch = post.title && post.title.toLowerCase().includes(query);
+    const contentMatch = post.content && post.content.toLowerCase().includes(query);
+    const authorMatch = post.author && post.author.displayName && 
+                        post.author.displayName.toLowerCase().includes(query);
+    
+    return categoryMatch && (titleMatch || contentMatch || authorMatch);
   });
 
   return (
@@ -341,6 +369,26 @@ function HomePage() {
                 連結靈魂，共創精彩，分享生活的每一刻
               </p>
             </motion.div>
+
+            {/* 搜尋結果提示 */}
+            {searchQuery.trim() && (
+              <div className="bg-blue-50 dark:bg-blue-900 p-4 rounded-lg mb-4">
+                <div className="flex justify-between items-center">
+                  <p className="text-blue-700 dark:text-blue-300">
+                    搜尋結果：「{searchQuery}」{filteredPosts.length > 0 ? `(找到 ${filteredPosts.length} 筆結果)` : '(沒有找到結果)'}
+                  </p>
+                  <button 
+                    onClick={() => {
+                      setSearchQuery('');
+                      navigate(ROUTES.HOME);
+                    }}
+                    className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
+                  >
+                    清除搜尋
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* 文章列表區域 */}
             <div className="grid gap-4 sm:gap-6">

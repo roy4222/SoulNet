@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ROUTES } from '../routes';
 import { useAuth } from '../contexts/AuthContext';
+import { useState } from 'react';
 
 // 預設頭像URL
 const DEFAULT_AVATAR = 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSCvBNjFR_6BVhW3lFNwF0oEk2N8JXjeiaSqg&s';
@@ -20,6 +21,17 @@ export default function MobileMenu({
 }) {
     const navigate = useNavigate();
     const { isAdmin } = useAuth(); // 獲取用戶角色信息
+    const [searchQuery, setSearchQuery] = useState(''); // 搜尋關鍵字狀態
+
+    // 處理搜尋提交
+    const handleSearch = (e) => {
+        e.preventDefault();
+        if (searchQuery.trim()) {
+            // 將搜尋關鍵字作為查詢參數傳遞給首頁
+            navigate(`${ROUTES.HOME}?search=${encodeURIComponent(searchQuery.trim())}`);
+            onClose(); // 關閉選單
+        }
+    };
 
     return (
         <AnimatePresence>
@@ -68,6 +80,35 @@ export default function MobileMenu({
 
                         {/* 選單內容 */}
                         <div className="p-4">
+                            {/* 搜尋欄 */}
+                            <form onSubmit={handleSearch} className="mb-4">
+                                <div className="relative">
+                                    <input 
+                                        type="text" 
+                                        className="w-full border rounded-full py-2 px-4 text-gray-700 dark:text-gray-300 dark:bg-gray-800 leading-tight focus:outline-none focus:border-blue-500 dark:focus:border-blue-400" 
+                                        placeholder="搜尋..." 
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                    />
+                                    <button 
+                                        type="submit"
+                                        className="absolute right-0 top-0 mt-2 mr-4"
+                                    >
+                                        <svg 
+                                            className="h-5 w-5 text-gray-400 dark:text-gray-500" 
+                                            fill="none" 
+                                            strokeLinecap="round" 
+                                            strokeLinejoin="round" 
+                                            strokeWidth="2" 
+                                            viewBox="0 0 24 24" 
+                                            stroke="currentColor"
+                                        >
+                                            <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </form>
+
                             {/* 用戶資訊區塊：顯示頭像、名稱和郵箱 */}
                             {user ? (
                                 <>
