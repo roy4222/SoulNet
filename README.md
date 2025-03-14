@@ -79,9 +79,82 @@ graph TD
 ```
 
 ### 元件關係圖
+
+#### 頁面組件總覽
 ```mermaid
 graph TD
-    subgraph Pages
+    subgraph Pages[頁面組件]
+        HP[HomePage<br/>首頁]
+        PP[PostPage<br/>文章詳情頁]
+        NP[NewPost<br/>發文頁]
+        PF[Profile<br/>個人檔案]
+        SG[Sign<br/>登入頁]
+        RG[Register<br/>註冊頁]
+        AP[AdminPanel<br/>管理後台]
+        EP[EditPost<br/>編輯文章]
+        RP[ResetPassword<br/>重設密碼]
+    end
+    
+    classDef page fill:#f9f,stroke:#333,stroke-width:2px
+    class HP,PP,NP,PF,SG,RG,AP,EP,RP page
+```
+
+#### 共用組件總覽
+```mermaid
+graph TD
+    subgraph Layout[版面組件]
+        HD[Header<br/>頁首導航]
+        FT[Footer<br/>頁尾資訊]
+        MM[MobileMenu<br/>手機版選單]
+    end
+    
+    subgraph Post[文章相關組件]
+        PC[PostCard<br/>文章卡片]
+        PIB[PostInteractionButtons<br/>互動按鈕]
+        PH[PostHeader<br/>文章標題區]
+        PCN[PostContent<br/>文章內容]
+        PCF[PostCommentForm<br/>評論表單]
+        PCL[PostCommentsList<br/>評論列表]
+    end
+    
+    subgraph UI[介面組件]
+        CS[CategorySidebar<br/>分類側欄]
+        IM[ImageModal<br/>圖片檢視]
+        STB[ScrollToTopButton<br/>回頂按鈕]
+        SM[SuccessMessage<br/>成功提示]
+        BB[BackButton<br/>返回按鈕]
+        LS[LoadingState<br/>載入狀態]
+        TS[TabSelector<br/>分頁選擇器]
+    end
+    
+    subgraph Admin[管理組件]
+        AU[AdminUserManagement<br/>用戶管理]
+        APM[AdminPostManagement<br/>文章管理]
+        AH[AdminHeader<br/>管理後台導航]
+    end
+    
+    classDef layout fill:#e6f3ff,stroke:#333,stroke-width:2px
+    classDef post fill:#f9e6ff,stroke:#333,stroke-width:2px
+    classDef ui fill:#e6ffe6,stroke:#333,stroke-width:2px
+    classDef admin fill:#ffe6e6,stroke:#333,stroke-width:2px
+    
+    class HD,FT,MM layout
+    class PC,PIB,PH,PCN,PCF,PCL post
+    class CS,IM,STB,SM,BB,LS,TS ui
+    class AU,APM,AH admin
+```
+
+#### Context 提供者與消費者關係
+```mermaid
+graph TD
+    subgraph Contexts[全局狀態]
+        AC[AuthContext<br/>認證狀態]
+        TC[ThemeContext<br/>主題狀態]
+    end
+    
+    subgraph Consumers[主要消費者]
+        HD[Header]
+        MM[MobileMenu]
         HP[HomePage]
         PP[PostPage]
         NP[NewPost]
@@ -93,42 +166,67 @@ graph TD
         RP[ResetPassword]
     end
     
-    subgraph Components
-        PC[PostCard]
-        PIB[PostInteractionButtons]
-        CS[CategorySidebar]
-        IM[ImageModal]
-        STB[ScrollToTopButton]
-        SM[SuccessMessage]
-        HD[Header]
-        FT[Footer]
-        MM[MobileMenu]
-        PH[PostHeader]
-        PCN[PostContent]
-        PCF[PostCommentForm]
-        PCL[PostCommentsList]
-        BB[BackButton]
-        LS[LoadingState]
-        AU[AdminUserManagement]
-        AP[AdminPostManagement]
-        AH[AdminHeader]
-        TS[TabSelector]
-    end
+    AC --> HD
+    AC --> MM
+    AC --> HP
+    AC --> PP
+    AC --> NP
+    AC --> PF
+    AC --> SG
+    AC --> RG
+    AC --> AP
+    AC --> EP
+    AC --> RP
     
-    subgraph Contexts
-        AC[AuthContext]
-        TC[ThemeContext]
-    end
+    TC --> HD
     
-    %% HomePage 關係
+    classDef context fill:#ffeb99,stroke:#333,stroke-width:2px
+    classDef consumer fill:#c2f0c2,stroke:#333,stroke-width:2px
+    
+    class AC,TC context
+    class HD,MM,HP,PP,NP,PF,SG,RG,AP,EP,RP consumer
+```
+
+#### 首頁相關組件關係
+```mermaid
+graph TD
+    HP[HomePage<br/>首頁]
+    PC[PostCard<br/>文章卡片]
+    PIB[PostInteractionButtons<br/>互動按鈕]
+    CS[CategorySidebar<br/>分類側欄]
+    IM[ImageModal<br/>圖片檢視]
+    STB[ScrollToTopButton<br/>回頂按鈕]
+    SM[SuccessMessage<br/>成功提示]
+    
     HP --> PC
     HP --> CS
     HP --> IM
     HP --> STB
     HP --> SM
-    HP --> PIB
+    PC --> PIB
     
-    %% PostPage 關係
+    classDef main fill:#f9f,stroke:#333,stroke-width:2px
+    classDef sub fill:#bbf,stroke:#333,stroke-width:2px
+    
+    class HP main
+    class PC,PIB,CS,IM,STB,SM sub
+```
+
+#### 文章詳情頁組件關係
+```mermaid
+graph TD
+    PP[PostPage<br/>文章詳情頁]
+    PH[PostHeader<br/>文章標題區]
+    PCN[PostContent<br/>文章內容]
+    PCF[PostCommentForm<br/>評論表單]
+    PCL[PostCommentsList<br/>評論列表]
+    PIB[PostInteractionButtons<br/>互動按鈕]
+    IM[ImageModal<br/>圖片檢視]
+    SM[SuccessMessage<br/>成功提示]
+    BB[BackButton<br/>返回按鈕]
+    STB[ScrollToTopButton<br/>回頂按鈕]
+    LS[LoadingState<br/>載入狀態]
+    
     PP --> PH
     PP --> PCN
     PP --> PCF
@@ -140,54 +238,38 @@ graph TD
     PP --> STB
     PP --> LS
     
-    %% NewPost 關係
-    NP --> BB
-    NP --> SM
-    NP --> LS
+    classDef main fill:#f9f,stroke:#333,stroke-width:2px
+    classDef sub fill:#bbf,stroke:#333,stroke-width:2px
     
-    %% Profile 關係
-    PF --> LS
-    PF --> PC
-    PF --> STB
-    PF --> SM
-    PF --> TS
+    class PP main
+    class PH,PCN,PCF,PCL,PIB,IM,SM,BB,STB,LS sub
+```
+
+#### 管理後台組件關係
+```mermaid
+graph TD
+    AP[AdminPanel<br/>管理後台]
+    AH[AdminHeader<br/>後台導航]
+    TS[TabSelector<br/>分頁選擇]
+    AU[AdminUserManagement<br/>用戶管理]
+    APM[AdminPostManagement<br/>文章管理]
+    STB[ScrollToTopButton<br/>回頂按鈕]
+    SM[SuccessMessage<br/>成功提示]
+    LS[LoadingState<br/>載入狀態]
     
-    %% Sign 關係
-    SG --> SM
-    
-    %% Register 關係
-    RG --> SM
-    
-    %% AdminPanel 關係
     AP --> AH
     AP --> TS
     AP --> AU
-    AP --> AP
+    AP --> APM
     AP --> STB
     AP --> SM
     AP --> LS
     
-    %% EditPost 關係
-    EP --> BB
-    EP --> SM
-    EP --> LS
+    classDef main fill:#f9f,stroke:#333,stroke-width:2px
+    classDef sub fill:#bbf,stroke:#333,stroke-width:2px
     
-    %% 共用元件關係
-    PC --> PIB
-    
-    %% Context 使用關係
-    HD --> AC
-    HD --> TC
-    MM --> AC
-    HP --> AC
-    PP --> AC
-    NP --> AC
-    PF --> AC
-    SG --> AC
-    RG --> AC
-    AP --> AC
-    EP --> AC
-    RP --> AC
+    class AP main
+    class AH,TS,AU,APM,STB,SM,LS sub
 ```
 
 ### 資料流圖
