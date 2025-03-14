@@ -86,6 +86,11 @@ graph TD
         PP[PostPage]
         NP[NewPost]
         PF[Profile]
+        SG[Sign]
+        RG[Register]
+        AP[AdminPanel]
+        EP[EditPost]
+        RP[ResetPassword]
     end
     
     subgraph Components
@@ -95,14 +100,94 @@ graph TD
         IM[ImageModal]
         STB[ScrollToTopButton]
         SM[SuccessMessage]
+        HD[Header]
+        FT[Footer]
+        MM[MobileMenu]
+        PH[PostHeader]
+        PCN[PostContent]
+        PCF[PostCommentForm]
+        PCL[PostCommentsList]
+        BB[BackButton]
+        LS[LoadingState]
+        AU[AdminUserManagement]
+        AP[AdminPostManagement]
+        AH[AdminHeader]
+        TS[TabSelector]
     end
     
+    subgraph Contexts
+        AC[AuthContext]
+        TC[ThemeContext]
+    end
+    
+    %% HomePage 關係
     HP --> PC
     HP --> CS
     HP --> IM
     HP --> STB
     HP --> SM
+    HP --> PIB
+    
+    %% PostPage 關係
+    PP --> PH
+    PP --> PCN
+    PP --> PCF
+    PP --> PCL
+    PP --> PIB
+    PP --> IM
+    PP --> SM
+    PP --> BB
+    PP --> STB
+    PP --> LS
+    
+    %% NewPost 關係
+    NP --> BB
+    NP --> SM
+    NP --> LS
+    
+    %% Profile 關係
+    PF --> LS
+    PF --> PC
+    PF --> STB
+    PF --> SM
+    PF --> TS
+    
+    %% Sign 關係
+    SG --> SM
+    
+    %% Register 關係
+    RG --> SM
+    
+    %% AdminPanel 關係
+    AP --> AH
+    AP --> TS
+    AP --> AU
+    AP --> AP
+    AP --> STB
+    AP --> SM
+    AP --> LS
+    
+    %% EditPost 關係
+    EP --> BB
+    EP --> SM
+    EP --> LS
+    
+    %% 共用元件關係
     PC --> PIB
+    
+    %% Context 使用關係
+    HD --> AC
+    HD --> TC
+    MM --> AC
+    HP --> AC
+    PP --> AC
+    NP --> AC
+    PF --> AC
+    SG --> AC
+    RG --> AC
+    AP --> AC
+    EP --> AC
+    RP --> AC
 ```
 
 ### 資料流圖
