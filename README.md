@@ -59,10 +59,15 @@ graph TD
         RR[React Router]
     end
     
-    subgraph Backend [Firebase Backend]
-        Auth[Firebase Auth]
-        FS[Firestore]
-        ST[Storage]
+    subgraph Backend
+        subgraph Firebase
+            Auth[Firebase Auth]
+            FS[Firestore]
+        end
+        
+        subgraph Cloudflare
+            R2[Cloudflare R2]
+        end
     end
     
     UI --> RC
@@ -70,7 +75,7 @@ graph TD
     RC --> RR
     CTX --> Auth
     RC --> FS
-    RC --> ST
+    RC --> R2
 ```
 
 ### 元件關係圖
@@ -111,10 +116,15 @@ flowchart TD
         CS[Categories State]
     end
     
-    subgraph Firebase
-        FA[Firebase Auth]
-        FS[Firestore]
-        FST[Firebase Storage]
+    subgraph Backend Services
+        subgraph Firebase
+            FA[Firebase Auth]
+            FS[Firestore]
+        end
+        
+        subgraph Cloudflare
+            R2[R2 Storage]
+        end
     end
     
     subgraph User Actions
@@ -129,8 +139,8 @@ flowchart TD
     AC --> LC
     
     P --> FS
-    U --> FST
-    FST --> FS
+    U --> R2
+    R2 --"圖片URL"--> FS
     
     FS --> PS
     FS --> US
@@ -180,7 +190,11 @@ stateDiagram-v2
 
 ### 後端服務
 - **Firebase Auth**：處理用戶認證
-- **Firebase Storage**：存儲用戶上傳的圖片
+- **Cloudflare R2**：
+  - 圖片和媒體文件存儲
+  - 支援大文件上傳
+  - 全球 CDN 分發
+  - 成本效益優化
 - **Firebase Firestore**：
   - 文章數據存儲
   - 評論內嵌存儲
@@ -236,12 +250,18 @@ npm run build
 創建 `.env` 文件並配置以下環境變量：
 
 ```env
+# Firebase 配置
 VITE_FIREBASE_API_KEY=你的_API_KEY
 VITE_FIREBASE_AUTH_DOMAIN=你的_AUTH_DOMAIN
 VITE_FIREBASE_PROJECT_ID=你的_PROJECT_ID
-VITE_FIREBASE_STORAGE_BUCKET=你的_STORAGE_BUCKET
 VITE_FIREBASE_MESSAGING_SENDER_ID=你的_MESSAGING_SENDER_ID
 VITE_FIREBASE_APP_ID=你的_APP_ID
+
+# Cloudflare R2 配置
+VITE_R2_ENDPOINT=你的_R2_ENDPOINT
+VITE_R2_ACCESS_KEY_ID=你的_R2_ACCESS_KEY_ID
+VITE_R2_SECRET_ACCESS_KEY=你的_R2_SECRET_ACCESS_KEY
+VITE_R2_BUCKET_NAME=你的_R2_BUCKET_NAME
 ```
 
 ## 開發計劃
