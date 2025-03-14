@@ -94,9 +94,6 @@ graph TD
         EP[EditPost<br/>編輯文章]
         RP[ResetPassword<br/>重設密碼]
     end
-    
-    classDef page fill:#f9f,stroke:#333,stroke-width:2px
-    class HP,PP,NP,PF,SG,RG,AP,EP,RP page
 ```
 
 #### 共用組件總覽
@@ -132,16 +129,6 @@ graph TD
         APM[AdminPostManagement<br/>文章管理]
         AH[AdminHeader<br/>管理後台導航]
     end
-    
-    classDef layout fill:#e6f3ff,stroke:#333,stroke-width:2px
-    classDef post fill:#f9e6ff,stroke:#333,stroke-width:2px
-    classDef ui fill:#e6ffe6,stroke:#333,stroke-width:2px
-    classDef admin fill:#ffe6e6,stroke:#333,stroke-width:2px
-    
-    class HD,FT,MM layout
-    class PC,PIB,PH,PCN,PCF,PCL post
-    class CS,IM,STB,SM,BB,LS,TS ui
-    class AU,APM,AH admin
 ```
 
 #### Context 提供者與消費者關係
@@ -179,12 +166,6 @@ graph TD
     AC --> RP
     
     TC --> HD
-    
-    classDef context fill:#ffeb99,stroke:#333,stroke-width:2px
-    classDef consumer fill:#c2f0c2,stroke:#333,stroke-width:2px
-    
-    class AC,TC context
-    class HD,MM,HP,PP,NP,PF,SG,RG,AP,EP,RP consumer
 ```
 
 #### 首頁相關組件關係
@@ -204,12 +185,6 @@ graph TD
     HP --> STB
     HP --> SM
     PC --> PIB
-    
-    classDef main fill:#f9f,stroke:#333,stroke-width:2px
-    classDef sub fill:#bbf,stroke:#333,stroke-width:2px
-    
-    class HP main
-    class PC,PIB,CS,IM,STB,SM sub
 ```
 
 #### 文章詳情頁組件關係
@@ -237,12 +212,6 @@ graph TD
     PP --> BB
     PP --> STB
     PP --> LS
-    
-    classDef main fill:#f9f,stroke:#333,stroke-width:2px
-    classDef sub fill:#bbf,stroke:#333,stroke-width:2px
-    
-    class PP main
-    class PH,PCN,PCF,PCL,PIB,IM,SM,BB,STB,LS sub
 ```
 
 #### 管理後台組件關係
@@ -264,12 +233,6 @@ graph TD
     AP --> STB
     AP --> SM
     AP --> LS
-    
-    classDef main fill:#f9f,stroke:#333,stroke-width:2px
-    classDef sub fill:#bbf,stroke:#333,stroke-width:2px
-    
-    class AP main
-    class AH,TS,AU,APM,STB,SM,LS sub
 ```
 
 ### 資料流圖
