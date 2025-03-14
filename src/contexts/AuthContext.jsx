@@ -62,18 +62,22 @@ export function AuthProvider({ children }) {
   // 重新驗證用戶
   const reauthenticateUser = async (currentPassword) => {
     try {
+      // 檢查是否有當前登入的用戶
       if (!currentUser) {
         throw new Error('沒有登入的用戶');
       }
       
+      // 創建包含用戶電子郵件和密碼的憑證
       const credential = EmailAuthProvider.credential(
         currentUser.email,
         currentPassword
       );
       
+      // 使用提供的憑證重新驗證用戶身份
       await reauthenticateWithCredential(currentUser, credential);
       return true;
     } catch (error) {
+      // 記錄錯誤並向上拋出以便調用者處理
       console.error('重新驗證失敗:', error);
       throw error;
     }

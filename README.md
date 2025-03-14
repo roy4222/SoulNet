@@ -47,6 +47,114 @@
   - 優先顯示用戶郵箱
   - 評論時間本地化顯示
 
+## 系統架構
+
+### 整體架構圖
+```mermaid
+graph TD
+    subgraph Frontend
+        UI[用戶界面]
+        RC[React Components]
+        CTX[Context API]
+        RR[React Router]
+    end
+    
+    subgraph Backend [Firebase Backend]
+        Auth[Firebase Auth]
+        FS[Firestore]
+        ST[Storage]
+    end
+    
+    UI --> RC
+    RC --> CTX
+    RC --> RR
+    CTX --> Auth
+    RC --> FS
+    RC --> ST
+```
+
+### 元件關係圖
+```mermaid
+graph TD
+    subgraph Pages
+        HP[HomePage]
+        PP[PostPage]
+        NP[NewPost]
+        PF[Profile]
+    end
+    
+    subgraph Components
+        PC[PostCard]
+        PIB[PostInteractionButtons]
+        CS[CategorySidebar]
+        IM[ImageModal]
+        STB[ScrollToTopButton]
+        SM[SuccessMessage]
+    end
+    
+    HP --> PC
+    HP --> CS
+    HP --> IM
+    HP --> STB
+    HP --> SM
+    PC --> PIB
+```
+
+### 資料流圖
+```mermaid
+flowchart TD
+    subgraph State Management
+        LC[Local Storage]
+        AC[Auth Context]
+        PS[Posts State]
+        US[Users State]
+        CS[Categories State]
+    end
+    
+    subgraph Firebase
+        FA[Firebase Auth]
+        FS[Firestore]
+        FST[Firebase Storage]
+    end
+    
+    subgraph User Actions
+        L[Login/Logout]
+        P[Post Creation]
+        I[Interaction]
+        U[Upload Image]
+    end
+    
+    L --> FA
+    FA --> AC
+    AC --> LC
+    
+    P --> FS
+    U --> FST
+    FST --> FS
+    
+    FS --> PS
+    FS --> US
+    FS --> CS
+    
+    I --> FS
+```
+
+### 狀態管理流程
+```mermaid
+stateDiagram-v2
+    [*] --> 未登入
+    未登入 --> 已登入: 登入/註冊
+    已登入 --> 未登入: 登出
+    
+    state 已登入 {
+        [*] --> 瀏覽
+        瀏覽 --> 發文: 點擊發文
+        瀏覽 --> 互動: 點讚/評論/分享
+        發文 --> 瀏覽: 發布完成
+        互動 --> 瀏覽: 操作完成
+    }
+```
+
 ### 技術棧
 
 ### 前端框架
@@ -89,7 +197,6 @@
 social/
 ├── src/
 │   ├── components/        # 可重用組件
-│   ├── pages/            
 │   │   ├── HomePage.jsx  # 首頁
 │   │   ├── NewPost.jsx   # 發文頁面
 │   │   ├── Post.jsx      # 文章詳情頁面
