@@ -81,20 +81,20 @@ graph TD
 ### 元件關係圖
 ```mermaid
 graph TD
-    subgraph Pages
-        HP[HomePage]
-        PP[PostPage]
-        NP[NewPost]
-        PF[Profile]
+    subgraph Pages[頁面組件]
+        HP[HomePage<br/>首頁-文章列表與分類瀏覽]
+        PP[PostPage<br/>文章詳情頁-查看完整文章內容]
+        NP[NewPost<br/>發文頁面-創建新文章]
+        PF[Profile<br/>個人檔案-用戶資料管理]
     end
     
-    subgraph Components
-        PC[PostCard]
-        PIB[PostInteractionButtons]
-        CS[CategorySidebar]
-        IM[ImageModal]
-        STB[ScrollToTopButton]
-        SM[SuccessMessage]
+    subgraph Components[共用組件]
+        PC[PostCard<br/>文章卡片-顯示文章預覽]
+        PIB[PostInteractionButtons<br/>互動按鈕-點讚/評論/分享]
+        CS[CategorySidebar<br/>分類側邊欄-文章分類導航]
+        IM[ImageModal<br/>圖片模態框-放大查看圖片]
+        STB[ScrollToTopButton<br/>回到頂部按鈕]
+        SM[SuccessMessage<br/>成功提示訊息]
     end
     
     HP --> PC
@@ -103,6 +103,11 @@ graph TD
     HP --> STB
     HP --> SM
     PC --> PIB
+
+    classDef page fill:#f9f,stroke:#333,stroke-width:2px
+    classDef component fill:#bbf,stroke:#333,stroke-width:2px
+    class HP,PP,NP,PF page
+    class PC,PIB,CS,IM,STB,SM component
 ```
 
 ### 資料流圖
