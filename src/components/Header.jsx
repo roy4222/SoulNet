@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '../contexts/themeContext';
 import MobileMenu from './MobileMenu';
 import { useAuth } from '../contexts/AuthContext';
+import SearchBar from './SearchBar';
 
 // 預設頭像URL
 const DEFAULT_AVATAR = 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSCvBNjFR_6BVhW3lFNwF0oEk2N8JXjeiaSqg&s';
@@ -26,7 +27,6 @@ export default function Header() {
     const [notificationMessage, setNotificationMessage] = useState(''); // 存儲通知消息
     const [showDropdown, setShowDropdown] = useState(false); // 控制下拉菜單顯示狀態
     const [isMenuOpen, setIsMenuOpen] = useState(false); // 控制漢堡菜單顯示狀態
-    const [searchQuery, setSearchQuery] = useState(''); // 搜尋關鍵字狀態
     const navigate = useNavigate(); // 用於頁面導航的鉤子
     const dropdownRef = useRef(null); // 下拉菜單的引用，用於檢測外部點擊
     const menuRef = useRef(null); // 漢堡菜單的引用，用於檢測外部點擊
@@ -41,15 +41,6 @@ export default function Header() {
         setTimeout(() => {
             setShowNotification(false);
         }, 1000);
-    };
-
-    // 處理搜尋提交
-    const handleSearch = (e) => {
-        e.preventDefault();
-        if (searchQuery.trim()) {
-            // 將搜尋關鍵字作為查詢參數傳遞給首頁
-            navigate(`${ROUTES.HOME}?search=${encodeURIComponent(searchQuery.trim())}`);
-        }
     };
 
     useEffect(() => {
@@ -127,9 +118,7 @@ export default function Header() {
 
     // 導航連結列表
     const navLinks = [
-        { to: ROUTES.HOME, text: '首頁' },
-        { to: '/explore', text: '探索' },
-        { to: '/messages', text: '訊息' }
+        { to: ROUTES.HOME, text: '' },
     ];
 
     return (
@@ -162,31 +151,7 @@ export default function Header() {
 
                     {/* 中間搜索欄 - 只在大螢幕顯示 */}
                     <div className="hidden lg:flex flex-1 mx-8">
-                        <form className="relative w-full" onSubmit={handleSearch}>
-                            <input 
-                                type="text" 
-                                className="w-full border rounded-full py-2 px-4 text-gray-700 dark:text-gray-300 leading-tight focus:outline-none focus:border-blue-500 dark:focus:border-blue-400" 
-                                placeholder="搜尋..." 
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                            />
-                            <button 
-                                type="submit"
-                                className="absolute right-0 top-0 mt-2 mr-4"
-                            >
-                                <svg 
-                                    className="h-5 w-5 text-gray-400 dark:text-gray-500" 
-                                    fill="none" 
-                                    strokeLinecap="round" 
-                                    strokeLinejoin="round" 
-                                    strokeWidth="2" 
-                                    viewBox="0 0 24 24" 
-                                    stroke="currentColor"
-                                >
-                                    <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                                </svg>
-                            </button>
-                        </form>
+                        <SearchBar />
                     </div>
 
                     {/* 右側用戶區域 - 只在大螢幕顯示 */}
