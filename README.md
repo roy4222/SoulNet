@@ -13,16 +13,16 @@
 ### 用戶系統
 - **Firebase 身份驗證**：安全可靠的用戶註冊與登入系統
 - **個人資料管理**：用戶可以自定義頭像和個人信息
-- **本地狀態持久化**：使用 localStorage 保存登入狀態
+- **本地狀態持久化**：使用 localStorage 保存登入狀態，確保瀏覽器重新整理後能保持登入
 
 ### 文章系統
-- **文章發布**：支持富文本編輯和圖片上傳
+- **文章發布**：支持富文本編輯和圖片上傳（支援多圖上傳）
 - **分類管理**：文章分類系統，支持多分類瀏覽
 - **互動功能**：
-  - 喜歡：使用心形圖標,支持點擊動畫
-  - 評論：優化的評論區設計,支持取消編輯
-  - 分享：一鍵複製文章連結
-  - 轉發：支持文章轉發功能
+  - 喜歡：使用心形圖標，支持點擊動畫與狀態保持
+  - 評論：優化的評論區設計，支持取消編輯
+  - 分享：一鍵複製文章連結到剪貼簿
+  - 轉發：支持文章轉發功能，防止重複轉發
 
 ### 管理員系統
 - **用戶管理**：
@@ -55,13 +55,16 @@
 
 ### 界面設計
 - **響應式設計**：完美適配桌面和移動設備
-- **深色模式**：支持淺色/深色主題切換
+- **深色模式**：支持淺色/深色主題切換，並記住使用者偏好
 - **動態過渡**：使用 Framer Motion 實現流暢動畫
 - **現代化 UI**：
   - Threads 風格的互動按鈕
   - 漸變色按鈕
   - 優化的評論區佈局
   - 圓角設計和陰影效果
+- **導航元件**：
+  - 返回按鈕（支援頁面歷史返回）
+  - 頁面切換過渡動畫
 
 ### 用戶體驗
 - **即時反饋**：
@@ -74,7 +77,10 @@
   - 支持取消編輯
   - 美觀的評論卡片設計
   - 優先顯示用戶郵箱
-  - 評論時間本地化顯示
+  - 評論時間本地化顯示（根據使用者時區）
+- **多圖瀏覽**：
+  - 圖片輪播和指示器
+  - 圖片放大檢視功能
 
 ## 系統架構
 
@@ -327,40 +333,43 @@ stateDiagram-v2
 ### 技術棧
 
 ### 前端框架
-- **React 18**：使用最新的 React 特性
-- **Vite**：快速的開發環境和構建工具
-- **React Router v6**：聲明式路由管理
+- **React 19**：使用最新的 React 特性（hooks, Suspense, Context API）
+- **Vite 6**：快速的開發環境和構建工具
+- **React Router v7**：聲明式路由管理
 
 ### 樣式與動畫
-- **Tailwind CSS**：原子化 CSS 框架
-- **Material UI**：
+- **Tailwind CSS 3**：原子化 CSS 框架
+- **Material UI 6**：
   - 優質的圖標系統
   - 表單組件
   - 按鈕組件
-- **Framer Motion**：
+- **Framer Motion 12**：
   - 頁面切換動畫
+  - 元件互動動畫（返回按鈕、卡片等）
   - 評論列表動畫
   - 按鈕互動效果
 
 ### 狀態管理
-- **React Context**：管理全局主題狀態
-- **Local Storage**：持久化用戶數據
+- **React Context**：管理全局認證和主題狀態
+- **localStorage**：持久化用戶數據與偏好設置
 - **Custom Hooks**：封裝可重用的業務邏輯
 
 ### 後端服務
-- **Firebase Auth**：處理用戶認證
+- **Firebase Auth 11**：處理用戶認證
 - **Cloudflare R2**：
   - 圖片和媒體文件存儲
   - 支援大文件上傳
   - 全球 CDN 分發
   - 成本效益優化
-- **Firebase Firestore**：
+  - 通過 AWS S3 兼容 API 集成
+- **Firebase Firestore 11**：
   - 文章數據存儲
   - 評論內嵌存儲
   - 用戶互動數據追蹤
+  - 實時數據同步
 
 ### 開發工具
-- **ESLint**：代碼質量控制
+- **ESLint 9**：代碼質量控制
 - **Prettier**：代碼格式化
 - **Git**：版本控制
 
@@ -370,22 +379,31 @@ stateDiagram-v2
 social/
 ├── src/
 │   ├── components/        # 可重用組件
-│   │   ├── HomePage.jsx  # 首頁
-│   │   ├── NewPost.jsx   # 發文頁面
-│   │   ├── Post.jsx      # 文章詳情頁面
-│   │   │   - 文章展示
-│   │   │   - 互動功能
-│   │   │   - 評論系統
-│   │   ├── Sign.jsx      # 登入頁面
-│   │   └── Register.jsx  # 註冊頁面
-│   ├── contexts/         # Context 相關
+│   │   ├── UI/            # 通用UI組件
+│   │   │   ├── BackButton.jsx # 返回按鈕組件
+│   │   │   └── ...        # 其他UI組件
+│   │   ├── Post/          # 文章相關組件
+│   │   │   ├── PostCard.jsx
+│   │   │   ├── PostInteractionButtons.jsx
+│   │   │   └── ...        # 其他文章組件
+│   │   ├── Admin/         # 管理員相關組件
+│   │   ├── Header.jsx     # 頁首導航
+│   │   └── Footer.jsx     # 頁尾信息
+│   ├── pages/             # 頁面組件
+│   │   ├── HomePage.jsx   # 首頁
+│   │   ├── PostPage.jsx   # 文章詳情頁
+│   │   └── ...            # 其他頁面
+│   ├── contexts/          # Context 相關
+│   │   ├── AuthContext.jsx # 認證 Context
 │   │   └── themeContext.jsx # 主題 Context
-│   ├── utils/            # 工具函數
-│   │   └── firebase.js   # Firebase 配置
-│   ├── routes.js         # 路由配置
-│   └── main.jsx          # 入口文件
-├── public/               # 靜態資源
-└── package.json          # 項目配置
+│   ├── utils/             # 工具函數
+│   │   └── firebase.js    # Firebase 配置
+│   ├── api/               # API 相關
+│   │   └── deleteImage.js # 圖片刪除API
+│   ├── routes.js          # 路由配置
+│   └── main.jsx           # 入口文件
+├── public/                # 靜態資源
+└── package.json           # 項目配置
 ```
 
 ## 安裝與運行
